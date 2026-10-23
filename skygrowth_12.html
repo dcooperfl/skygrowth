@@ -1,0 +1,1407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skygrowth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one dashboard column. Stat ribbon, then plain-language findings, then evidence sections (growth, posts, formats, timing, audience). */
+:root {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --ink: #0d1b2e;
+  --ink2: #3f5068;
+  --muted: #586a82;
+  --line: #dce4ee;
+  --accent: #1769d1;
+  --accent-soft: #e3eefb;
+  --good: #0d7a4d;
+  --bad: #b83225; --you: #2a78d6; --peer: #eb6834;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a111b; --surface: #101a28; --ink: #eaf1fa; --ink2: #b3c1d4; --muted: #94a5bc;
+    --line: #213146; --accent: #4da3ff; --accent-soft: #12283f; --good: #3ecf8e; --bad: #ff8274; --you: #3987e5; --peer: #d95926;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a111b; --surface: #101a28; --ink: #eaf1fa; --ink2: #b3c1d4; --muted: #94a5bc;
+  --line: #213146; --accent: #4da3ff; --accent-soft: #12283f; --good: #3ecf8e; --bad: #ff8274; --you: #3987e5; --peer: #d95926;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); margin: 0; padding-inline: 16px; padding-block: 0 56px; }
+.wrap { max-width: 1120px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* top bar */
+.bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding-block: 18px; }
+.brand { font: 700 22px/1 var(--f-display); letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-inline: -16px; padding-inline: 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.nav .in { display: flex; align-items: center; gap: 18px; max-width: 1120px; margin-inline: auto; min-width: 0; }
+.nav .brand { flex: none; padding-block: 12px; }
+.nav ul { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
+.nav ul::-webkit-scrollbar { display: none; }
+.nav a { display: block; padding: 15px 11px 13px; font-size: 13.5px; color: var(--ink2); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="true"] { color: var(--ink); font-weight: 500; border-bottom-color: var(--accent); }
+section.blk { scroll-margin-top: 62px; }
+.print-meta { display: none; }
+@media print {
+  @page { margin: 12mm; }
+  html, body { background: #fff !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .nav, #form, .tools, .ctabs, #tip, footer, button, .btn, .skip, #notice, #status, #balStatus, #peerStatus, #comStatus { display: none !important; }
+  .print-meta { display: block; font: 12px var(--f-mono); color: var(--muted); margin: 0 0 6px; }
+  .wrap { max-width: none !important; padding: 0 !important; }
+  section.blk { break-inside: auto; box-shadow: none !important; margin-top: 12px; padding: 14px; }
+  section.blk > header, h2, h3, .chips { break-after: avoid; }
+  .chip, .chart, svg, tr { break-inside: avoid; }
+  .tw { overflow: visible !important; }
+  .bio { display: table-cell !important; }
+  .empty:empty { display: none; }
+}
+
+@media (max-width: 640px) { .bio { display: none; } }
+.ctabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 10px; }
+.ctabs button { font: 500 13px var(--f-body); border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.ctabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ctabs button small { font: 500 11px var(--f-mono); opacity: .8; margin-left: 4px; }
+
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (max-width: 560px) { .nav .in { gap: 10px; } .brand { font-size: 18px; } .brand i { width: 18px; height: 18px; } .nav a { padding-inline: 9px; } }
+.brand i { width: 22px; height: 22px; border-radius: 6px 6px 6px 2px; background: var(--accent); display: inline-block; transform: rotate(-8deg); }
+form.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.field { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding-inline: 10px; min-width: 0; }
+.field span { color: var(--muted); }
+.field input { border: 0; background: transparent; padding: 9px 6px; width: min(280px, 60vw); min-width: 0; outline: none; }
+.field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+select, .btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .btn.primary { color: #04101e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #04101e; } }
+.btn:hover { border-color: var(--accent); }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+label.chk { display: flex; gap: 6px; align-items: center; color: var(--ink2); font-size: 13px; }
+
+#notice { border: 1px solid var(--line); background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+#notice.err { border-color: var(--bad); }
+#status { color: var(--muted); font: 13px var(--f-mono); min-height: 20px; padding-block: 8px 0; }
+
+/* profile + ribbon */
+.profile { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; padding-block: 22px 8px; }
+.who { display: flex; gap: 14px; align-items: center; min-width: 0; flex: 1 1 280px; }
+.av { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font: 700 20px var(--f-display); flex: none; object-fit: cover; }
+.av.sm { width: 28px; height: 28px; font-size: 12px; }
+.who h1 { font-size: 26px; line-height: 1.15; overflow-wrap: anywhere; }
+.who p { margin: 2px 0 0; color: var(--muted); overflow-wrap: anywhere; }
+.ribbon { display: flex; flex-wrap: wrap; gap: 14px 0; flex: 2 1 520px; }
+.stat { flex: 1 1 130px; padding-inline: 16px; border-left: 1px solid var(--line); min-width: 0; }
+.stat b { display: block; font: 700 28px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.stat em { font: normal 500 12px var(--f-mono); display: block; color: var(--muted); }
+.up { color: var(--good) !important; } .down { color: var(--bad) !important; }
+
+/* sections */
+section.blk { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 18px; min-width: 0; }
+section.blk > header { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+section.blk h2 { font-size: 20px; }
+section.blk header p { margin: 0; color: var(--muted); font-size: 13px; max-width: 62ch; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
+.grid2 > * { min-width: 0; }
+h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink2); margin-bottom: 10px; font-family: var(--f-body); }
+
+/* findings */
+.finds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 0 28px; }
+.finds > li { align-content: start; padding-block: 14px; border-top: 1px solid var(--line); display: grid; gap: 4px; min-width: 0; }
+.finds > li > b { font: 600 16px/1.3 var(--f-display); }
+.finds > li > p { margin: 0; color: var(--ink2); font-size: 14px; }
+details.more { margin-top: 6px; }
+details.more summary { cursor: pointer; color: var(--accent); font-size: 13px; width: fit-content; }
+details.more[open] summary { margin-bottom: 8px; }
+.dl { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.dl li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; min-width: 0; }
+.dl a { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.dl a:hover { text-decoration: underline; }
+.dl .person { grid-column: 1 / 3; }
+.dl li > .person:only-child { grid-column: 1 / 3; }
+.dl .person small { display: inline; margin-left: 6px; }
+.dl li > span:last-child { grid-column: 2; font-size: 12px; }
+.dl .person + span { grid-column: 2; }
+.fill.you { background: var(--you); } .fill.peer { background: var(--peer); opacity: .75; }
+.brow.me .lab { font-weight: 600; }
+.brow.pr { grid-template-columns: minmax(120px, 190px) 1fr auto; }
+.brow.pr .lab { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+@media (max-width: 560px) { .brow.pr { grid-template-columns: 110px 1fr auto; } }
+.frow { display: grid; grid-template-columns: minmax(104px, 150px) 1fr minmax(96px, auto); gap: 10px; align-items: center; font-size: 13px; }
+.frow .two { display: grid; gap: 3px; }
+.frow .two div { display: flex; align-items: center; gap: 8px; }
+.frow .two i { display: block; height: 8px; border-radius: 0 4px 4px 0; min-width: 2px; }
+.frow .two span { font: 11.5px var(--f-mono); color: var(--ink2); white-space: nowrap; }
+.frow .gap { font: 12px var(--f-mono); color: var(--muted); text-align: right; }
+.frow .gap.hi { color: var(--ink); font-weight: 500; }
+.pc { display: grid; gap: 6px; align-items: end; }
+.pgb { height: 110px; display: flex; gap: 2px; align-items: flex-end; border-bottom: 1px solid var(--line); }
+.pgb i { flex: 1; display: block; border-radius: 3px 3px 0 0; min-height: 2px; }
+.pg span { display: block; text-align: center; font: 10.5px var(--f-mono); color: var(--muted); margin-top: 4px; }
+.key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink2); margin: 8px 0 12px; }
+.key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.wchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wchips span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.wchips small { color: var(--muted); font: 11px var(--f-mono); margin-left: 6px; }
+.pp { display: grid; gap: 2px; padding-block: 10px; border-top: 1px solid var(--line); min-width: 0; }
+.pp .meta { font: 12px var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.pp a.t { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.venn text { font: 12px var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.venn text.big { font: 700 18px var(--f-display); }
+.stack { display: flex; height: 10px; border-radius: 0 5px 5px 0; overflow: hidden; background: var(--line); }
+.stack i { display: block; height: 100%; }
+.lk { background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-align: left; font: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.lk:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.pill.f { background: transparent; border: 1px solid var(--line); color: var(--muted); margin-right: 4px; display: inline-block; margin-top: 3px; }
+details.frd { border-top: 1px solid var(--line); padding-block: 8px; }
+details.frd > summary { list-style: none; cursor: pointer; }
+details.frd > summary::-webkit-details-marker { display: none; }
+details.frd .inner { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px 24px; padding-block: 10px 4px; }
+.panel { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+.tag { font: 500 11px var(--f-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; justify-self: start; }
+.tag.low { border-style: dashed; }
+
+/* charts */
+.chart { width: 100%; position: relative; min-height: 120px; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--muted); font: 11px var(--f-mono); }
+.chart text.halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.axis { stroke: var(--line); }
+.grid { stroke: var(--line); stroke-dasharray: 2 3; opacity: .8; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink2); margin-top: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.mk { fill: var(--surface); stroke: var(--ink); stroke-width: 2; cursor: pointer; }
+.dot { fill: var(--accent); fill-opacity: .8; stroke: var(--surface); stroke-width: 1.5; }
+.dot.rep { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+a:hover .dot, a:focus-visible .dot { fill-opacity: 1; stroke: var(--ink); }
+
+.bars { display: grid; gap: 10px; }
+.brow { display: grid; grid-template-columns: minmax(84px, 130px) 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.brow .lab { overflow-wrap: anywhere; }
+.track { height: 10px; background: var(--accent-soft); border-radius: 0 5px 5px 0; }
+.fill { height: 10px; background: var(--accent); border-radius: 0 5px 5px 0; min-width: 2px; }
+.brow .val { font: 12px var(--f-mono); color: var(--ink2); text-align: right; white-space: nowrap; }
+.brow.dim .fill { opacity: .45; }
+
+.heat { display: grid; grid-template-columns: 36px repeat(8, 1fr); gap: 3px; }
+.heat .hl { font: 11px var(--f-mono); color: var(--muted); align-self: center; }
+.heat .hc { text-align: left; align-self: end; }
+.cell { aspect-ratio: 1.5; min-height: 22px; border-radius: 4px; background: var(--accent); }
+.cell.none { background: transparent; border: 1px dashed var(--line); }
+.cell.best { outline: 2px solid var(--ink); outline-offset: 1px; }
+.scale { display: flex; align-items: center; gap: 8px; font: 11px var(--f-mono); color: var(--muted); margin-top: 10px; }
+.scale i { height: 8px; width: 120px; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--accent)); }
+
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.tw { overflow-x: auto; }
+th { text-align: left; font: 500 11px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.txt { min-width: 220px; max-width: 520px; overflow-wrap: anywhere; }
+.pill { font: 500 11px var(--f-mono); background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { background: transparent; border: 0; padding: 5px 11px; font-size: 13px; cursor: pointer; color: var(--ink2); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #04101e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #04101e; } }
+.tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 10px; }
+.person { display: flex; gap: 10px; align-items: center; min-width: 200px; }
+.person a { text-decoration: none; color: var(--ink); overflow-wrap: anywhere; }
+.person small { color: var(--muted); display: block; }
+.yes { color: var(--good); font-weight: 600; } .no { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.chip { border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; min-width: 150px; }
+.chip b { font: 700 22px var(--f-display); display: block; }
+.chip small { color: var(--muted); }
+.empty { color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 18px; font-size: 14px; }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+.list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; max-width: 280px; box-shadow: 0 4px 18px rgba(0,0,0,.25); line-height: 1.4; }
+#tip b { display: block; font-weight: 600; }
+footer { color: var(--muted); font-size: 12.5px; margin-top: 26px; max-width: 80ch; }
+@media (max-width: 560px) { .brow { grid-template-columns: 90px 1fr auto; } .stat b { font-size: 24px; } }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .4s ease; } }
+</style>
+</head>
+<body>
+  <nav class="nav" id="nav" aria-label="Sections"><div class="in">
+    <div class="brand"><i></i>Skygrowth</div>
+    <ul id="navList">
+      <li><a href="#top" data-s="top">Overview</a></li>
+      <li><a href="#findings" data-s="findings">Findings</a></li>
+      <li><a href="#growth" data-s="growth">Growth</a></li>
+      <li><a href="#posts" data-s="posts">Posts</a></li>
+      <li><a href="#kinds" data-s="kinds">Formats</a></li>
+      <li><a href="#timing" data-s="timing">Timing</a></li>
+      <li><a href="#audience" data-s="audience">Audience</a></li>
+      <li><a href="#balance" data-s="balance">Fans</a></li>
+      <li><a href="#amps" data-s="amps">Amplifiers</a></li>
+      <li><a href="#peers" data-s="peers">Compare</a></li>
+      <li><a href="#common" data-s="common">Common</a></li>
+      <li><a href="#blocks" data-s="blocks">Blocks</a></li>
+    </ul>
+  </div></nav>
+<div class="wrap">
+  <div class="bar" id="top">
+    <form class="ctl" id="form" autocomplete="off">
+      <label class="field"><span>@</span><input id="handle" placeholder="yourname.bsky.social" aria-label="Bluesky handle"></label>
+      <select id="depth" aria-label="Posts to analyze">
+        <option value="200">Last 200 posts</option>
+        <option value="500" selected>Last 500 posts</option>
+        <option value="1000">Last 1,000 posts</option>
+        <option value="2000">Last 2,000 posts</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="scan" checked> Scan followers and likes</label>
+      <label class="chk" title="Sends only your account ID to constellation.microcosm.blue, a public Bluesky backlink index, to read when each follow happened."><input type="checkbox" id="fdates" checked> Read follow dates</label>
+      <label class="chk" title="Looks up follower counts for your mutuals (extra requests)."><input type="checkbox" id="ampck" checked> Find amplifiers</label>
+      <label class="chk" title="Reads public block records through constellation.microcosm.blue. Only your account ID is sent."><input type="checkbox" id="blk" checked> Check blocks</label>
+      <button class="btn primary" type="submit" id="go">Analyze</button>
+      <button class="btn" type="button" id="demoBtn">Example data</button>
+      <button class="btn" type="button" id="themeBtn" aria-label="Switch theme">Theme</button>
+      <button class="btn" type="button" id="pdfBtn" title="Opens your browser's print dialog. Choose Save as PDF.">Export PDF</button>
+    </form>
+  </div>
+  <div id="notice" hidden></div>
+  <div id="status" aria-live="polite"></div>
+
+  <div class="print-meta" id="printMeta"></div>
+  <div class="profile" id="profile"></div>
+
+  <section class="blk" id="findings"></section>
+  <section class="blk" id="growth"></section>
+  <section class="blk" id="posts"></section>
+  <section class="blk" id="kinds"></section>
+  <section class="blk" id="timing"></section>
+  <section class="blk" id="audience"></section>
+  <section class="blk" id="balance"></section>
+  <section class="blk" id="amps"></section>
+  <section class="blk" id="peers"></section>
+  <section class="blk" id="common"></section>
+  <section class="blk" id="blocks"></section>
+
+  <footer>
+    Data comes straight from Bluesky's public API to your browser and goes nowhere else. Follow dates come from Constellation (constellation.microcosm.blue), a public Bluesky backlink index, which receives only your account ID, and is also where block records are read from. Saved follower snapshots stay in this browser only, so open Skygrowth regularly on the same browser to build it. Engagement means likes + reposts + replies + quotes. These are patterns in your own posts, and they can't prove what causes what.
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat("en-US");
+const fmt = n => nf.format(Math.round(n));
+const compact = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M" : n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "k" : fmt(n);
+const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS_FULL = ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"];
+const BLOCKS = ["12–3am", "3–6am", "6–9am", "9am–12pm", "12–3pm", "3–6pm", "6–9pm", "9pm–12am"];
+const BLOCK_SHORT = ["12a", "3a", "6a", "9a", "12p", "3p", "6p", "9p"];
+const dateFmt = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+const shortDate = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const tipAttr = html => ` data-tip="${esc(html)}"`;
+const initials = p => esc((p.displayName || p.handle || "?").trim().slice(0, 1).toUpperCase());
+const avatar = (p, cls = "") => p.avatar ? `<img class="av ${cls}" src="${esc(p.avatar)}" alt="" loading="lazy">` : `<div class="av ${cls}">${initials(p)}</div>`;
+const profileUrl = h => `https://bsky.app/profile/${encodeURIComponent(h)}`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function safeGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } }
+
+/* ---------- theme ---------- */
+(function theme() {
+  const root = document.documentElement, btn = $("#themeBtn");
+  const apply = t => { t === "system" ? root.removeAttribute("data-theme") : root.setAttribute("data-theme", t); btn.textContent = "Theme: " + t; };
+  let t = safeGet("skygrowth:theme") || "system"; apply(t);
+  btn.addEventListener("click", () => { t = t === "system" ? "dark" : t === "dark" ? "light" : "system"; safeSet("skygrowth:theme", t); apply(t); redrawCharts(); });
+})();
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let l = x + 14, t = y + 14;
+  if (l + w > innerWidth - 8) l = x - w - 14;
+  if (t + h > innerHeight - 8) t = y - h - 14;
+  tip.style.left = Math.max(8, l) + "px"; tip.style.top = Math.max(8, t) + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+document.addEventListener("mousemove", e => { const t = e.target.closest && e.target.closest("[data-tip]"); if (t) showTip(t.dataset.tip, e.clientX, e.clientY); else if (!e.target.closest || !e.target.closest(".hovl")) hideTip(); });
+document.addEventListener("focusin", e => { const t = e.target.closest && e.target.closest("[data-tip]"); if (t) { const r = t.getBoundingClientRect(); showTip(t.dataset.tip, r.left + r.width / 2, r.top); } });
+document.addEventListener("focusout", hideTip);
+
+/* ---------- follow time from a record key (TIDs encode microseconds since 1970) ---------- */
+const B32 = "234567abcdefghijklmnopqrstuvwxyz";
+function tidToMs(rkey) {
+  if (!/^[2-7a-z]{13}$/.test(rkey)) return null;
+  let v = 0n; for (const c of rkey) v = (v << 5n) | BigInt(B32.indexOf(c));
+  const ms = Number(((v >> 10n) & ((1n << 53n) - 1n)) / 1000n);
+  return ms > 1640995200000 && ms < Date.now() + 864e5 ? ms : null;
+}
+
+/* ---------- Bluesky public API ---------- */
+const API = "https://public.api.bsky.app/xrpc/";
+async function xrpc(method, params) {
+  const url = API + method + "?" + new URLSearchParams(params);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let r;
+    try { r = await fetch(url); } catch (e) { throw new Error("Couldn't reach Bluesky. Open this file in your browser (not a preview pane) and check your connection."); }
+    if (r.status === 429) { const wait = (+r.headers.get("retry-after") || 2 ** attempt) * 1000; await sleep(Math.min(wait, 15000)); continue; }
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.message || "Bluesky returned HTTP " + r.status); }
+    return r.json();
+  }
+  throw new Error("Bluesky is rate-limiting requests. Wait a minute and try again.");
+}
+async function mapLimit(items, n, fn) {
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
+  return out;
+}
+const liveSource = {
+  live: true,
+  profile: h => xrpc("app.bsky.actor.getProfile", { actor: h }),
+  async feed(did, limit, progress, filter = "posts_with_replies") {
+    const items = []; let cursor;
+    while (items.length < limit) {
+      const r = await xrpc("app.bsky.feed.getAuthorFeed", { actor: did, limit: 100, filter, ...(cursor ? { cursor } : {}) });
+      items.push(...r.feed); progress(items.length); cursor = r.cursor;
+      if (!cursor || !r.feed.length) break;
+    }
+    return items;
+  },
+  async likes(uri) { const r = await xrpc("app.bsky.feed.getLikes", { uri, limit: 100 }); return r.likes.map(l => ({ ...l.actor, likedAt: l.createdAt })); },
+  async followDates(did, cap, progress, coll = "app.bsky.graph.follow") {
+    const base = "https://constellation.microcosm.blue";
+    const tries = [
+      c => base + "/xrpc/blue.microcosm.links.getBacklinks?" + new URLSearchParams({ subject: did, source: coll + ":subject", limit: 100, ...(c ? { cursor: c } : {}) }),
+      c => base + "/links?" + new URLSearchParams({ target: did, collection: coll, path: ".subject", limit: 100, ...(c ? { cursor: c } : {}) })
+    ];
+    const recs = j => j && (j.records || j.linking_records || j.backlinks);
+    const parse = it => { let d = it.did, c = it.collection, k = it.rkey; if (!k && it.uri) { const q = it.uri.split("/"); d = q[2]; c = q[3]; k = q[4]; } return d && k && (!c || c === coll) ? { did: d, t: tidToMs(k) } : null; };
+    let mk = null, cursor, out = [];
+    for (;;) {
+      let j;
+      if (mk === null) {
+        let err;
+        for (let i = 0; i < tries.length && mk === null; i++) { try { const r = await fetch(tries[i](cursor)); if (!r.ok) throw new Error("HTTP " + r.status); j = await r.json(); if (!Array.isArray(recs(j))) throw new Error("unexpected response format"); mk = i; } catch (e) { err = e; } }
+        if (mk === null) throw new Error("The backlink service didn't answer (" + (err && err.message) + ").");
+      } else {
+        const r = await fetch(tries[mk](cursor)); if (r.status === 429) { await sleep(2500); continue; }
+        if (!r.ok) throw new Error("The backlink service returned HTTP " + r.status + ".");
+        j = await r.json();
+      }
+      const L = recs(j); for (const it of L) { const x = parse(it); if (x && x.t) out.push(x); }
+      progress(out.length); cursor = j.cursor;
+      if (!cursor || !L.length || out.length >= cap) break;
+    }
+    if (!out.length && coll.endsWith("follow")) throw new Error("No follow records came back.");
+    return { list: out.sort((a, b) => a.t - b.t), complete: !cursor };
+  },
+  async reposts(uri) { const r = await xrpc("app.bsky.feed.getRepostedBy", { uri, limit: 100 }); return r.repostedBy; },
+  async thread(uri) { const r = await xrpc("app.bsky.feed.getPostThread", { uri, depth: 1, parentHeight: 0 }); return ((r.thread && r.thread.replies) || []).filter(x => x.post).map(x => ({ p: x.post.author, t: new Date(x.post.indexedAt).getTime() })); },
+  async myLikes(did, sinceMs, progress) {
+    let pds;
+    if (did.startsWith("did:plc:")) { const r = await fetch("https://plc.directory/" + did); if (!r.ok) throw new Error("Couldn't look up where your account is hosted."); const d = await r.json(); const sv = (d.service || []).find(x => String(x.id).endsWith("atproto_pds")); pds = sv && sv.serviceEndpoint; }
+    else if (did.startsWith("did:web:")) { const r = await fetch("https://" + did.slice(8) + "/.well-known/did.json"); const d = await r.json(); const sv = (d.service || []).find(x => String(x.id).endsWith("atproto_pds")); pds = sv && sv.serviceEndpoint; }
+    if (!pds) throw new Error("Couldn't find your account host.");
+    const base = pds.replace(/\/$/, "") + "/xrpc/com.atproto.repo.listRecords";
+    let reverse = false, cursor, out = [], checked = false;
+    for (;;) {
+      const r = await fetch(base + "?" + new URLSearchParams({ repo: did, collection: "app.bsky.feed.like", limit: 100, ...(reverse ? { reverse: "true" } : {}), ...(cursor ? { cursor } : {}) }));
+      if (!r.ok) throw new Error("Your likes couldn't be read (HTTP " + r.status + ").");
+      const j = await r.json(), recs = j.records || [];
+      if (!checked && recs.length > 1) { checked = true; if (new Date(recs[0].value.createdAt) < new Date(recs[recs.length - 1].value.createdAt)) { reverse = true; cursor = undefined; out = []; continue; } }
+      let stop = false;
+      for (const rec of recs) { const t = new Date(rec.value.createdAt).getTime(); if (t < sinceMs) { stop = true; continue; } const u = rec.value.subject && rec.value.subject.uri; if (u) out.push({ did: u.split("/")[2], t }); }
+      progress(out.length); cursor = j.cursor;
+      if (stop || !cursor || !recs.length || out.length >= 6000) break;
+    }
+    return out;
+  },
+  blockDates(did, cap, progress, coll) { return this.followDates(did, cap, progress, coll); },
+  async profiles(dids) { const out = []; for (let i = 0; i < dids.length; i += 25) { const r = await xrpc("app.bsky.actor.getProfiles", dids.slice(i, i + 25).map(d => ["actors", d])); out.push(...r.profiles); } return out; },
+  async pages(method, key, did, cap, progress) {
+    const out = []; let cursor;
+    while (out.length < cap) {
+      const r = await xrpc(method, { actor: did, limit: 100, ...(cursor ? { cursor } : {}) });
+      out.push(...r[key]); progress(out.length); cursor = r.cursor; if (!cursor || !r[key].length) break;
+    }
+    return out;
+  },
+  followers(did, cap, progress) { return this.pages("app.bsky.graph.getFollowers", "followers", did, cap, progress); },
+  follows(did, cap, progress) { return this.pages("app.bsky.graph.getFollows", "follows", did, cap, progress); }
+};
+
+/* ---------- example data (clearly labeled in the UI) ---------- */
+const demoSource = (() => {
+  let s = 20260901; const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const N_FOLL = 2480;
+  const followerDids = Array.from({ length: N_FOLL }, (_, i) => "did:plc:demo" + i);
+  const fan = i => ({ did: followerDids[i] || "did:plc:demonf" + i, handle: (i < N_FOLL ? "friend" : "lurker") + i + ".bsky.social", displayName: (i < N_FOLL ? "Friend " : "Lurker ") + i });
+  const topics = ["Shipped a small fix today and it felt great.", "Anyone else still using paper notes for planning?", "Reading list for this month, recommendations welcome.", "Quick thread on how I organize my week.", "Coffee, spreadsheets, and a quiet morning.", "What's one tool you'd never give up?", "Hot take: simple beats clever almost every time.", "Behind the scenes of this week's project.", "Small wins add up. Logged three today.", "Learning something new every day this month."];
+  const profile = { did: "did:plc:demo", handle: "example.bsky.social", displayName: "Example Account", description: "Sample data for exploring the dashboard.", followersCount: N_FOLL, followsCount: 612, postsCount: 1870, createdAt: "2023-05-01T00:00:00Z" };
+  const CTAPOOL = ["What's one habit you'd keep forever? Reply below.", "Three things I learned this week 🧵", "Hot take: most dashboards hide the point. Thoughts?", "New post is live. Link below, let me know what you think.", "Quick tip: batch your replies once a day.", "Which would you pick, A or B? 👇", "Sunday reset: plan, prep, breathe. #productivity", "Behind the scenes of a small launch.", "Repost if this helped you today.", "Reading list update. What should I add?", "A short thread on writing clearly ✍️", "Tiny change, big difference: ask one better question."];
+  function genPeer(did, handle, followers) {
+    let sd = Array.from(did).reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7) >>> 0; const r = () => { sd |= 0; sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const strength = .5 + r() * 1.6, hours = [[7, 8, 9, 12, 13, 17, 18], [8, 9, 10, 11, 14, 15], [18, 19, 20, 21, 22], [6, 7, 12, 19, 20]][Math.floor(r() * 4)], W = [["Text only", .25], ["Image", .4], ["Link card", .1], ["Quote post", .1], ["Video", .15]], M2 = { "Text only": 1, "Image": 1.8, "Link card": .6, "Quote post": .9, "Video": 2.4 }, out = [];
+    for (let i = 0; i < 230; i++) {
+      const d = new Date(Date.now() - Math.floor(Math.pow(r(), 1.1) * 170) * 864e5); d.setHours(hours[Math.floor(r() * hours.length)], Math.floor(r() * 60), 0, 0); if (d > new Date()) continue;
+      let q = r(), f = "Text only"; for (const [k, w] of W) { if ((q -= w) < 0) { f = k; break; } }
+      let text = CTAPOOL[Math.floor(r() * CTAPOOL.length)]; const isReply = r() < .22; const likes = Math.round(followers * .011 * strength * Math.exp(-.6 + r() * 1.7) * M2[f] * (text.includes("?") ? 1.3 : 1) * (isReply ? .2 : 1));
+      out.push({ post: { uri: "at://" + did + "/app.bsky.feed.post/3p" + i, author: { did, handle }, record: { text, createdAt: d.toISOString(), reply: isReply ? {} : undefined, embed: f === "Text only" || isReply ? undefined : { $type: { "Image": "app.bsky.embed.images", "Link card": "app.bsky.embed.external", "Quote post": "app.bsky.embed.record", "Video": "app.bsky.embed.video" }[f] }, facets: text.includes("#") ? [{ features: [{ $type: "app.bsky.richtext.facet#tag" }] }] : [] }, likeCount: likes, repostCount: Math.round(likes * .12), replyCount: Math.round(likes * .07), quoteCount: Math.round(likes * .03), indexedAt: d.toISOString() }, reply: isReply ? { parent: { author: { did: "did:plc:demo" + Math.floor(r() * 900), handle: "friend" + Math.floor(r() * 900) + ".bsky.social" } } } : undefined });
+    }
+    return out.sort((a, b) => new Date(b.post.record.createdAt) - new Date(a.post.record.createdAt));
+  }
+  const items = [];
+  const fmtW = [["Text only", .4], ["Image", .28], ["Link card", .12], ["Quote post", .1], ["Video", .1]];
+  const mult = { "Text only": 1, "Image": 1.9, "Link card": .55, "Quote post": .9, "Video": 2.2 };
+  for (let i = 0; i < 360; i++) {
+    const days = Math.floor(Math.pow(rnd(), 1.15) * 170), d = new Date(Date.now() - days * 864e5);
+    const hrPool = [7, 8, 8, 9, 12, 13, 17, 18, 19, 20, 20, 21, 22, 10, 15, 23, 1];
+    d.setHours(pick(hrPool), Math.floor(rnd() * 60), 0, 0);
+    if (d > new Date()) continue;
+    let r = rnd(), f = "Text only"; for (const [k, w] of fmtW) { if ((r -= w) < 0) { f = k; break; } }
+    const isReply = rnd() < .2; const dow = (d.getDay() + 6) % 7, h = d.getHours();
+    let base = Math.exp(1.6 + rnd() * 1.5) * mult[f] * (isReply ? .25 : 1);
+    if ((dow === 1 || dow === 3) && h >= 18 && h <= 21) base *= 1.8; if (h >= 7 && h <= 9 && dow < 5) base *= 1.3; if (h >= 22 || h <= 4) base *= .5;
+    let text = pick(topics); const q = rnd() < .25; if (q) text += " What do you think?"; if (rnd() < .45) text += " " + pick(["Here is the longer version of the story for anyone curious about how it came together.", "The short version: it took three tries, and the third one stuck because I changed the order of the steps and wrote everything down along the way."]); if (rnd() < .15) text += " #buildinpublic";
+    const likes = Math.round(base), emb = f === "Text only" ? undefined : { $type: { "Image": "app.bsky.embed.images", "Link card": "app.bsky.embed.external", "Quote post": "app.bsky.embed.record", "Video": "app.bsky.embed.video" }[f] };
+    items.push({ post: { uri: "at://did:plc:demo/app.bsky.feed.post/3demo" + i, author: { did: profile.did, handle: profile.handle }, record: { text, createdAt: d.toISOString(), embed: emb, reply: isReply ? {} : undefined, facets: text.includes("#") ? [{ features: [{ $type: "app.bsky.richtext.facet#tag" }] }] : [] }, likeCount: likes, repostCount: Math.round(likes * .14 * rnd() * 2), replyCount: Math.round(likes * .08 * rnd() * 2), quoteCount: Math.round(likes * .03 * rnd() * 2), indexedAt: d.toISOString() }, reply: isReply ? { parent: { author: fan(100 + Math.floor(rnd() * 220)) } } : undefined });
+  }
+  items.sort((a, b) => new Date(b.post.record.createdAt) - new Date(a.post.record.createdAt));
+  const fTimes = (() => {
+    const D = 330, w = Array.from({ length: D }, (_, i) => .5 + i / D);
+    items.forEach(it => { const ds = Math.floor((Date.now() - new Date(it.post.record.createdAt)) / 864e5), i = D - 1 - ds, e = it.post.likeCount + it.post.repostCount; if (i >= 0 && i < D) w[i] += e * .12; if (i + 1 < D) w[i + 1] += e * .06; });
+    const tot = w.reduce((a, b) => a + b, 0), out = [];
+    for (let k = 0; k < N_FOLL; k++) { let r = rnd() * tot, i = 0; while (i < D - 1 && (r -= w[i]) > 0) i++; out.push(Math.min(Date.now() - 6e4, Date.now() - (D - 1 - i) * 864e5 + rnd() * 864e5)); }
+    return out;
+  })();
+  return {
+    live: false, profile: async () => profile,
+    async myLikes(_d, sinceMs) { const out = []; for (let k = 0; k < 420; k++) { const i = 100 + Math.floor(Math.pow(rnd(), 1.5) * 220); out.push({ did: followerDids[i], t: Date.now() - rnd() * (Date.now() - sinceMs) }); } return out; },
+    async thread(uri) { const it0 = items.find(x => x.post.uri === uri), n = Math.min(it0.post.replyCount, 6), out = []; for (let k = 0; k < n; k++) out.push({ p: fan(Math.floor(Math.pow(rnd(), 2) * 70)), t: new Date(it0.post.record.createdAt).getTime() + rnd() * 864e5 }); return out; },
+    blockDates: async () => { const O = items.filter(x => !x.post.record.reply), list = []; for (let i = 0; i < 17; i++) { let it; for (let g = 0; g < 9; g++) { it = O[Math.floor(rnd() * O.length)]; if (it.post.record.text.startsWith("Hot take") || it.post.record.text.startsWith("Anyone")) break; } list.push({ did: "did:plc:blk" + i, t: Math.min(Date.now() - 6e4, new Date(it.post.record.createdAt).getTime() + rnd() * 30 * 36e5) }); } return { list: list.sort((a, b) => a.t - b.t), complete: true }; },
+    profiles: async dids => dids.map(d => {
+      const k = +d.replace(/\D/g, ""); if (d.startsWith("did:plc:blk")) return { did: d, handle: "blocker" + k + ".bsky.social", displayName: "Example Account " + k };
+      const u = ((k + 7) * 2654435761 >>> 0) / 4294967296, u2 = ((k + 99) * 40503 * 2654435761 >>> 0) / 4294967296;
+      return { did: d, handle: "friend" + k + ".bsky.social", displayName: "Friend " + k, followersCount: Math.round(Math.exp(4.5 + u * 6.3)), followsCount: Math.round(Math.exp(5 + u2 * 3)), postsCount: Math.round(Math.exp(5 + u2 * 4)), createdAt: new Date(Date.now() - (200 + u2 * 900) * 864e5).toISOString(), description: ["Writer and coffee person.", "Building in public. Mostly tech.", "Photos, plants, and long walks.", "Designer. Opinions are my own."][k % 4] };
+    }),
+    async reposts(uri) { const it0 = items.find(x => x.post.uri === uri), n = Math.min(30, it0.post.repostCount), out = new Map(); let g = 0; while (out.size < n && g++ < 300) { const i = Math.floor(Math.pow(rnd(), 1.8) * 400); out.set(followerDids[i], fan(i)); } return [...out.values()]; }, followDates: async () => ({ list: followerDids.map((d, k) => ({ did: d, t: fTimes[k] })).sort((a, b) => a.t - b.t), complete: true }), async feed(did, limit, _p, _filter) { if (did === profile.did) return items.slice(0, limit); const pr = (await this.profiles([did]))[0]; return genPeer(did, pr.handle, pr.followersCount).slice(0, limit); },
+    async likes(uri) { const it0 = items.find(x => x.post.uri === uri), n = Math.min(100, it0.post.likeCount), pt = new Date(it0.post.record.createdAt).getTime(); const out = new Map(); let g = 0; while (out.size < n && g++ < 500) { const i = Math.floor(Math.pow(rnd(), 2.2) * 160); const a = i < 120 ? fan(i) : fan(N_FOLL + i); out.set(a.did, { ...a, likedAt: new Date(pt + rnd() * 1.5 * 864e5).toISOString() }); } return [...out.values()]; },
+    async followers(did, cap) {
+      if (did === profile.did) return followerDids.map((d, i) => ({ did: d, handle: fan(i).handle, displayName: fan(i).displayName }));
+      let sd = Array.from(did).reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 11) >>> 0; const r = () => { sd |= 0; sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const out = new Map(), n = Math.min(cap, 900 + Math.floor(r() * 1100));
+      while (out.size < n) { if (r() < .07) { const i = Math.floor(r() * N_FOLL), a = fan(i); out.set(a.did, a); } else { const k = Math.floor(Math.pow(r(), 2.2) * 7000); out.set("did:plc:pool" + k, { did: "did:plc:pool" + k, handle: "pool" + k + ".bsky.social", displayName: "Pool " + k }); } }
+      return [...out.values()];
+    },
+    async follows(did) {
+      if (!did || did === profile.did) return Array.from({ length: 612 }, (_, i) => i < 380 ? fan(i * 3) : fan(N_FOLL + 500 + i));
+      const fl = await this.followers(did, 5000); let sd = Array.from(did).reduce((a, c) => (a * 17 + c.charCodeAt(0)) | 0, 5) >>> 0; const r = () => { sd |= 0; sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const out = new Map(); fl.forEach(a => { if (r() < .55) out.set(a.did, a); });
+      for (let i = 0; i < 150; i++) { const a = fan(Math.floor(r() * 1100)); out.set(a.did, a); }
+      for (let i = 0; i < 250; i++) { const k = Math.floor(r() * 7000); out.set("did:plc:pool" + k, { did: "did:plc:pool" + k, handle: "pool" + k + ".bsky.social", displayName: "Pool " + k }); }
+      return [...out.values()];
+    },
+    history() {
+      const snaps = [];
+      for (let i = 58; i >= 0; i--) { const t = Date.now() - i * 864e5 * 1.2; snaps.push({ t, followers: fTimes.filter(x => x <= t).length, follows: 560 + Math.round((58 - i) * .9), posts: 1790 + Math.round((58 - i) * 1.4) }); }
+      return { snaps, prev: { dids: [...followerDids.filter((_, k) => fTimes[k] < Date.now() - 6 * 864e5), "did:plc:gone1", "did:plc:gone2", "did:plc:gone3"].map(d => [d, d.startsWith("did:plc:gone") ? "former" + d.slice(-1) + ".bsky.social" : fan(+d.slice(12)).handle]), t: Date.now() - 6 * 864e5 } };
+    }
+  };
+})();
+
+/* ---------- analysis ---------- */
+function analyze(profile, items) {
+  const now = Date.now(), posts = []; let reposts = 0;
+  for (const it of items) {
+    if (it.reason) { reposts++; continue; }
+    const p = it.post; if (!p || p.author.did !== profile.did) continue;
+    const r = p.record || {}, et = r.embed ? r.embed.$type || "" : "";
+    let format = "Text only";
+    if (et.includes("images")) format = "Image"; else if (et.includes("video")) format = "Video"; else if (et.includes("external")) format = "Link card";
+    else if (et.includes("recordWithMedia")) format = "Quote + media"; else if (et.includes("record")) format = "Quote post";
+    const t = new Date(r.createdAt || p.indexedAt); if (isNaN(t) || t.getTime() > now + 864e5) continue;
+    const text = r.text || "";
+    const likes = p.likeCount || 0, rp = p.repostCount || 0, rep = p.replyCount || 0, q = p.quoteCount || 0;
+    posts.push({
+      uri: p.uri, url: profileUrl(profile.handle) + "/post/" + p.uri.split("/").pop(), text, t, likes, reposts: rp, replies: rep, quotes: q, eng: likes + rp + rep + q,
+      isReply: !!r.reply, replyTo: it.reply && it.reply.parent && it.reply.parent.author ? it.reply.parent.author.handle : null, format, len: text.length, question: text.includes("?"),
+      tag: (r.facets || []).some(f => (f.features || []).some(x => (x.$type || "").endsWith("#tag"))),
+      dow: (t.getDay() + 6) % 7, block: Math.floor(t.getHours() / 3)
+    });
+  }
+  const orig = posts.filter(p => !p.isReply), replies = posts.filter(p => p.isReply);
+  const engs = orig.map(p => p.eng), base = median(engs);
+  const group = (arr, key) => { const m = new Map(); arr.forEach(p => { const k = key(p); if (k == null) return; if (!m.has(k)) m.set(k, []); m.get(k).push(p.eng); }); return [...m].map(([k, v]) => ({ key: k, n: v.length, med: median(v), mean: mean(v) })); };
+  const byFormat = group(orig, p => p.format).sort((a, b) => b.med - a.med || b.n - a.n);
+  const lenBucket = p => p.len < 80 ? "Under 80 chars" : p.len < 160 ? "80–159 chars" : p.len < 240 ? "160–239 chars" : "240+ chars";
+  const lenOrder = ["Under 80 chars", "80–159 chars", "160–239 chars", "240+ chars"];
+  const byLength = group(orig, lenBucket).sort((a, b) => lenOrder.indexOf(a.key) - lenOrder.indexOf(b.key));
+  const byStyle = [
+    ...group(orig, p => p.question ? "Asks a question" : "No question").sort((a, b) => a.key.localeCompare(b.key)),
+    ...group(orig, p => p.tag ? "Uses a hashtag" : "No hashtag").sort((a, b) => a.key.localeCompare(b.key))
+  ];
+  const byDay = group(orig, p => p.dow), byBlock = group(orig, p => p.block);
+  const cells = Array.from({ length: 7 }, () => Array.from({ length: 8 }, () => []));
+  orig.forEach(p => cells[p.dow][p.block].push(p.eng));
+  const heat = cells.map(row => row.map(a => ({ n: a.length, med: median(a) })));
+  // weekly cadence (Monday start), last 26 weeks
+  const mondayOf = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.getTime(); };
+  const thisWeek = mondayOf(new Date()), weeks = [];
+  for (let i = 25; i >= 0; i--) weeks.push({ t: thisWeek - i * 7 * 864e5, orig: 0, rep: 0, engs: [] });
+  posts.forEach(p => { const w = weeks.find(w => w.t === mondayOf(p.t)); if (w) { p.isReply ? w.rep++ : (w.orig++, w.engs.push(p.eng)); } });
+  const sorted = [...orig].sort((a, b) => b.eng - a.eng), total = engs.reduce((a, b) => a + b, 0);
+  const top10n = Math.max(1, Math.ceil(orig.length * .1));
+  const top10share = total ? sorted.slice(0, top10n).reduce((a, p) => a + p.eng, 0) / total : 0;
+  const recent56 = posts.filter(p => p.t.getTime() > now - 56 * 864e5).length;
+  const span = posts.length ? Math.max(1, (now - Math.min(...posts.map(p => p.t.getTime()))) / 864e5) : 0;
+  return { profile, posts, orig, replies, reposts, base, byFormat, byLength, byStyle, byDay, byBlock, heat, weeks, sorted, top10share, perWeek: Math.min(span, 56) ? recent56 / (Math.min(span, 56) / 7) : 0, span };
+}
+
+/* ---------- state ---------- */
+let M = null, AUD = null, HIST = null, FD = null, BD = null, DEMO = true;
+let audOnlyFans = false;
+
+/* ---------- history (follower snapshots in this browser) ---------- */
+const hkey = did => "skygrowth:v1:" + did;
+function loadHist(did) { const raw = safeGet(hkey(did)); if (!raw) return { snaps: [], prev: null }; try { return JSON.parse(raw); } catch { return { snaps: [], prev: null }; } }
+function saveHist(did, h) { return safeSet(hkey(did), JSON.stringify(h)); }
+
+/* ---------- credit new follows to posts (rough, last-touch) ---------- */
+function attributeBlocks() {
+  M.posts.forEach(p => { p.bcredit = 0; });
+  if (!BD || !BD.list) return;
+  const O = [...M.orig].sort((a, b) => a.t - b.t);
+  for (const f of BD.list) {
+    let lo = 0, hi = O.length - 1, ix = -1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (O[mid].t.getTime() <= f.t) { ix = mid; lo = mid + 1; } else hi = mid - 1; }
+    if (ix >= 0 && f.t - O[ix].t.getTime() <= 48 * 36e5) O[ix].bcredit++;
+  }
+}
+function attribute() {
+  attributeBlocks();
+  M.posts.forEach(p => { p.credit = 0; p.lift = 0; p.fanF = null; }); M.attr = null;
+  if (!FD || !FD.list) return;
+  const O = [...M.orig].sort((a, b) => a.t - b.t), F = FD.list; let credited = 0;
+  for (const f of F) {
+    let lo = 0, hi = O.length - 1, ix = -1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (O[mid].t.getTime() <= f.t) { ix = mid; lo = mid + 1; } else hi = mid - 1; }
+    if (ix >= 0 && f.t - O[ix].t.getTime() <= 48 * 36e5) { O[ix].credit++; credited++; }
+  }
+  const eligible = O.filter(p => p.t.getTime() <= Date.now() - 48 * 36e5), typical = eligible.length ? mean(eligible.map(p => p.credit)) : 0;
+  O.forEach(p => { p.lift = (p.credit + .5) / (typical + .5); });
+  M.attr = { credited, typical };
+  if (AUD && AUD.likesByPost && FD.map) M.orig.forEach(p => {
+    const L = AUD.likesByPost.get(p.uri); if (!L) return;
+    p.fanF = L.filter(l => { const ft = FD.map.get(l.did); return ft && ft >= p.t.getTime() && Math.abs(ft - l.likedAt) <= 864e5; }).length;
+  });
+}
+const trunc = (s, n = 70) => s.length > n ? s.slice(0, n).trim() + "…" : s;
+
+/* ---------- renderers ---------- */
+function renderProfile() {
+  const p = M.profile, el = $("#profile");
+  const snaps = HIST.snaps, last = snaps[snaps.length - 1];
+  const weekAgo = snaps.filter(s => s.t <= Date.now() - 6.5 * 864e5).pop() || (snaps.length > 1 ? snaps[0] : null);
+  let delta = "";
+  if (weekAgo && last && last !== weekAgo) { const d = last.followers - weekAgo.followers, days = Math.max(1, Math.round((last.t - weekAgo.t) / 864e5)); delta = `<em class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : "−"}${fmt(Math.abs(d))} in ${days}d</em>`; }
+  else delta = `<em>tracking starts today</em>`;
+  const rate = p.followersCount ? (median(M.orig.map(x => x.eng)) / p.followersCount * 100) : 0;
+  el.innerHTML = `
+    <div class="who">${avatar(p)}<div><h1>${esc(p.displayName || p.handle)}</h1><p class="mono">@${esc(p.handle)}${DEMO ? " · example data" : ""}</p></div></div>
+    <div class="ribbon">
+      <div class="stat"><small>Followers</small><b>${fmt(p.followersCount)}</b>${delta}</div>
+      <div class="stat"><small>Following</small><b>${fmt(p.followsCount)}</b><em>ratio ${(p.followersCount / Math.max(1, p.followsCount)).toFixed(1)} : 1</em></div>
+      <div class="stat"><small>Median engagement</small><b>${fmt(M.base)}</b><em>per original post</em></div>
+      <div class="stat"><small>Engagement rate</small><b>${rate.toFixed(rate < 1 ? 2 : 1)}%</b><em>median ÷ followers</em></div>
+      <div class="stat"><small>Posting pace</small><b>${M.perWeek.toFixed(1)}</b><em>posts / week, 8 wks</em></div>
+    </div>`;
+}
+
+const lenBucketOf = p => p.len < 80 ? "Under 80 chars" : p.len < 160 ? "80–159 chars" : p.len < 240 ? "160–239 chars" : "240+ chars";
+const dPosts = (arr, n = 5, extra) => `<ul class="dl">${arr.slice(0, n).map(p => `<li><span class="mono muted">${shortDate(p.t)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(trunc(p.text, 120)) || "(no text)"}</a><span class="mono muted">${extra ? extra(p) : fmt(p.eng) + " engagement"}</span></li>`).join("")}</ul>`;
+const dPeople = (arr, n = 20) => `<ul class="dl">${arr.slice(0, n).map(x => `<li><div class="person" style="min-width:0">${avatar(x.p, "sm")}<div><a href="${profileUrl(x.p.handle)}" target="_blank" rel="noopener">${esc(x.p.displayName || x.p.handle)}<small class="mono">@${esc(x.p.handle)}</small></a></div></div><span class="mono muted">${esc(x.note)}</span></li>`).join("")}</ul>${arr.length > n ? `<p class="muted" style="font-size:12.5px">and ${fmt(arr.length - n)} more. The Audience section lists your most engaged people.</p>` : ""}`;
+function findings() {
+  const out = [], base = M.base, O = M.orig;
+  const ratio = m => (m + .5) / (base + .5);
+  const x = r => r.toFixed(1) + "×";
+  if (O.length < 15) out.push({ h: "Not enough posts yet for strong patterns", b: `Only ${O.length} original posts were found, so format and timing comparisons are shaky. Treat everything below as early hints.`, n: O.length });
+  const fm = M.byFormat.filter(f => f.n >= 5);
+  if (fm.length >= 2) {
+    const best = fm[0], worst = fm[fm.length - 1];
+    if (ratio(best.med) >= 1.25) out.push({ h: `${best.key} posts earn ${x(ratio(best.med))} your typical engagement`, b: `Median ${fmt(best.med)} vs ${fmt(base)} across all original posts. ${worst.key} is lowest at ${fmt(worst.med)}. Try leading with ${best.key.toLowerCase()} for your next few posts and compare.`, n: best.n, dl: `Show your top ${best.key.toLowerCase()} posts`, d: dPosts(O.filter(p => p.format === best.key).sort((a, b) => b.eng - a.eng), 5) });
+    else out.push({ h: "Post format barely changes your results", b: `Every format with 5+ posts lands within a similar range (median ${fmt(worst.med)} to ${fmt(best.med)}). Content and timing probably matter more for you right now.`, n: fm.reduce((a, f) => a + f.n, 0) });
+  }
+  if (M.attr && M.attr.credited >= 10) {
+    const top = [...O].sort((a, b) => b.credit - a.credit || b.eng - a.eng)[0];
+    if (top && top.credit >= 3) out.push({ h: `"${trunc(top.text, 60)}" was followed by your biggest follower bump`, b: `${top.credit} people followed within 48 hours after it, about ${top.lift.toFixed(1)}× a typical post. It was a ${top.format.toLowerCase()} post with ${fmt(top.eng)} engagement. This is a rough estimate: each follow is credited to the latest post before it.`, n: top.credit, dl: "Show this post", d: dPosts([top], 1, p => p.credit + " new follows · " + fmt(p.eng) + " engagement") });
+    const gf = new Map(); O.filter(p => p.t.getTime() <= Date.now() - 48 * 36e5).forEach(p => { if (!gf.has(p.format)) gf.set(p.format, []); gf.get(p.format).push(p.credit); });
+    const fr = [...gf].filter(([, v]) => v.length >= 5).map(([k, v]) => ({ k, n: v.length, m: mean(v) })).sort((a, b) => b.m - a.m);
+    if (fr.length >= 2 && fr[0].m > 0 && (fr[0].m + .1) / (M.attr.typical + .1) >= 1.3) out.push({ h: `${fr[0].k} posts are followed by the most new followers`, b: `${fr[0].m.toFixed(1)} new follows per post within 48 hours, against ${M.attr.typical.toFixed(1)} for a typical post. Likes and follows don't always go together, so this can differ from your engagement ranking.`, n: fr[0].n, dl: `Show ${fr[0].k.toLowerCase()} posts that brought followers`, d: dPosts(O.filter(p => p.format === fr[0].k).sort((a, b) => b.credit - a.credit), 5, p => p.credit + " new follows") });
+  }
+  if (BD && BD.list && BD.list.length >= 3) {
+    const tb = [...O].sort((a, b) => b.bcredit - a.bcredit)[0];
+    if (tb && tb.bcredit >= 2) out.push({ h: `"${trunc(tb.text, 60)}" was followed by the most blocks`, b: `${tb.bcredit} accounts blocked you within 48 hours after it, out of ${fmt(BD.list.length)} blockers in total. It may be worth checking whether the tone or topic reached people who didn't want it. This is a rough estimate that credits each block to your latest post before it.`, n: tb.bcredit, dl: "Show this post", d: dPosts([tb], 1, p => p.bcredit + " blocks · " + fmt(p.eng) + " engagement") });
+  }
+  const bestDay = M.byDay.filter(d => d.n >= 8).sort((a, b) => b.med - a.med)[0], bestBlock = M.byBlock.filter(d => d.n >= 8).sort((a, b) => b.med - a.med)[0];
+  if (bestDay && bestBlock && (ratio(bestDay.med) >= 1.2 || ratio(bestBlock.med) >= 1.2)) out.push({ h: `Aim for ${DAYS_FULL[bestDay.key]} around ${BLOCKS[bestBlock.key]}`, b: `${DAYS_FULL[bestDay.key]} have a median of ${fmt(bestDay.med)} (${fmt(bestDay.n)} posts) and the ${BLOCKS[bestBlock.key]} window ${fmt(bestBlock.med)} (${fmt(bestBlock.n)} posts), against ${fmt(base)} overall. Times are in your browser's timezone.`, n: Math.min(bestDay.n, bestBlock.n), dl: "Show your posts from that window", d: (() => { let S = O.filter(p => p.dow === bestDay.key && p.block === bestBlock.key); let note = ""; if (!S.length) { S = O.filter(p => p.dow === bestDay.key); note = `<p class="muted" style="font-size:12.5px">No posts fall in both, so these are your top ${DAYS_FULL[bestDay.key]} posts.</p>`; } return note + dPosts(S.sort((a, b) => b.eng - a.eng), 6); })() });
+  const q = M.byStyle.find(s => s.key === "Asks a question"), nq = M.byStyle.find(s => s.key === "No question");
+  if (q && nq && q.n >= 5 && nq.n >= 5 && Math.abs(Math.log(ratio(q.med) / ratio(nq.med))) > Math.log(1.25)) out.push({ h: q.med > nq.med ? "Questions get more engagement from you" : "Questions underperform for you", b: `Posts with a question mark have a median of ${fmt(q.med)} vs ${fmt(nq.med)} without. ${q.med > nq.med ? "Ending posts with a prompt may be worth repeating." : "Your audience may prefer statements over prompts."}`, n: q.n, dl: q.med > nq.med ? "Show your top question posts" : "Show your top posts without a question", d: dPosts(O.filter(p => q.med > nq.med ? p.question : !p.question).sort((a, b) => b.eng - a.eng), 5) });
+  const ln = M.byLength.filter(l => l.n >= 8).sort((a, b) => b.med - a.med);
+  if (ln.length >= 2 && ratio(ln[0].med) / ratio(ln[ln.length - 1].med) > 1.3) out.push({ h: `${ln[0].key} is your best length`, b: `Median ${fmt(ln[0].med)} compared with ${fmt(ln[ln.length - 1].med)} for ${ln[ln.length - 1].key.toLowerCase()}.`, n: ln[0].n, dl: `Show your top ${ln[0].key.toLowerCase()} posts`, d: dPosts(O.filter(p => lenBucketOf(p) === ln[0].key).sort((a, b) => b.eng - a.eng), 5) });
+  if (M.orig.length >= 20) out.push({ h: `Your top ${Math.max(1, Math.ceil(O.length * .1))} posts drive ${Math.round(M.top10share * 100)}% of all engagement`, b: M.top10share > .5 ? "Growth is hit-driven for you. Study your best posts (see Top posts) and repeat what they share." : "Engagement is spread fairly evenly, which usually means a loyal core audience rather than one-off viral posts.", n: O.length, dl: "Show these posts", d: dPosts(M.sorted, Math.min(10, Math.max(1, Math.ceil(O.length * .1))), p => fmt(p.eng) + " engagement") });
+  const active = M.weeks.slice(-12).filter(w => w.orig + w.rep > 0).length;
+  if (M.span > 60) out.push({ h: `You posted in ${active} of the last 12 weeks`, b: active >= 11 ? "That's a steady rhythm. Consistency helps people recognise you in their feed." : "Gaps make it harder for new followers to stick around. A small, repeatable schedule usually beats bursts.", n: 12 });
+  if (AUD && AUD.fans) {
+    const f = AUD.fans.filter(x => x.n >= 2 && !x.follows);
+    if (f.length) out.push({ h: `${f.length} regular fans don't follow you yet`, b: "They've liked two or more of your recent posts. Replying to them or following back is the cheapest growth move on this page. See Audience for the list.", n: f.length, dl: "Show these people", d: dPeople(f.map(x => ({ p: x.p, note: "liked " + x.n + " posts" }))) });
+  }
+  if (AUD && AUD.amp) {
+    const me = M.profile.followersCount, big = AUD.amp.filter(r => r.p.followersCount > Math.max(me, 1000)), idle = big.filter(r => !r.likes && !r.rep);
+    if (big.length) out.push({ h: `${fmt(big.length)} of your mutuals have a bigger audience than you`, b: `${fmt(idle.length)} of them haven't liked or reposted your recent posts. They already follow you and you follow them, so they're the warmest accounts to engage with. See Amplifier candidates.`, n: big.length, dl: "Show the biggest accounts that haven't engaged", d: dPeople(idle.sort((a, b) => b.p.followersCount - a.p.followersCount).map(r => ({ p: r.p, note: compact(r.p.followersCount) + " followers" })), 10) });
+  }
+  if (BAL && BAL.neglected && BAL.neglected.length) out.push({ h: `${BAL.neglected.length} fans engage with you and get little back`, b: "They've liked, reposted or replied to your recent posts, and you've done little or nothing in return. A like back or a reply keeps them from drifting away. See Fan balance.", n: BAL.neglected.length, dl: "Show these people", d: dPeople(BAL.neglected.map(e => ({ p: e.p, note: acts(e) }))) });
+  if (BAL && BAL.chased && BAL.chased.length) out.push({ h: `You're chasing ${BAL.chased.length} people who don't engage back`, b: "You engage with them often and they rarely or never engage with you. That time may work harder on people who reciprocate. See Fan balance.", n: BAL.chased.length, dl: "Show these people", d: dPeople(BAL.chased.map(e => ({ p: e.p, note: "you: " + acts(e.g) }))) });
+  if (AUD && AUD.mutualPct != null) out.push({ h: `${Math.round(AUD.mutualPct)}% of your followers are people you follow back`, b: AUD.mutualPct > 60 ? "Your audience is mostly a community of peers. Reach beyond it by engaging with larger accounts in your topic." : "Most of your followers are one-way. That's a healthy sign you're being found for your content.", n: AUD.followers.length });
+  return out;
+}
+function renderFindings() {
+  const f = findings();
+  $("#findings").innerHTML = `<header><h2>What your data says</h2><p>Plain-language patterns from your original posts. Dashed tags mean a small sample, so treat those as hints.</p></header>` +
+    (f.length ? `<ul class="finds">${f.map(i => `<li><b>${esc(i.h)}</b><p>${esc(i.b)}</p>${i.d ? `<details class="more"><summary>${esc(i.dl || "Show details")}</summary>${i.d}</details>` : ""}<span class="tag ${i.n < 10 ? "low" : ""}">n = ${fmt(i.n)}${i.n < 10 ? " · small sample" : ""}</span></li>`).join("")}</ul>` : `<div class="empty">Nothing to report yet.</div>`);
+}
+
+/* line chart used for snapshots and the follow-date curve */
+function lineChart(el, s, o) {
+  const W = el.clientWidth || 600, H = 240, m = { l: 48, r: 16, t: 14, b: 26 };
+  const t0 = s[0].t, t1 = s[s.length - 1].t, vals = s.map(p => p.v);
+  let lo = o.zero ? 0 : Math.min(...vals), hi = Math.max(...vals); const pad = Math.max(2, (hi - lo) * .12); lo = Math.max(0, lo - (o.zero ? 0 : pad)); hi += pad;
+  const X = t => m.l + (t - t0) / Math.max(1, t1 - t0) * (W - m.l - m.r), Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  let g = ""; for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4, y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 8}" y="${y + 4}" text-anchor="end">${compact(v)}</text>`; }
+  let xt = ""; for (let i = 0; i < 5; i++) { const t = t0 + (t1 - t0) * i / 4; xt += `<text x="${X(t)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${dateFmt(new Date(t)).replace(/, (\d{4})$/, " ’" + "$1".slice(0)).replace(/’(\d\d)(\d\d)/, "’$2")}</text>`; }
+  const pts = s.map(p => [X(p.t), Y(p.v)]), line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = line + ` L${pts[pts.length - 1][0]} ${H - m.b} L${pts[0][0]} ${H - m.b} Z`, lp = pts[pts.length - 1];
+  const yAt = t => { let l = 0, h = s.length - 1; while (l < h) { const mid = (l + h) >> 1; if (s[mid].t < t) l = mid + 1; else h = mid; } return Y(s[l].v); };
+  const mk = (o.markers || []).filter(k => k.t >= t0 && k.t <= t1).map(k => `<a href="${esc(k.href)}" target="_blank" rel="noopener"><circle class="mk" cx="${X(k.t).toFixed(1)}" cy="${yAt(k.t).toFixed(1)}" r="5"${tipAttr(k.html)}/></a>`).join("");
+  el.innerHTML = `<svg class="hovl" width="${W}" height="${H}" role="img" aria-label="${esc(o.label)}">${g}${xt}<path d="${area}" fill="var(--accent)" opacity=".10"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/><line id="gx" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="3 3" hidden/><circle id="gd" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" hidden/><circle cx="${lp[0]}" cy="${lp[1]}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text class="halo" x="${lp[0] - 8}" y="${lp[1] - 10}" text-anchor="end" style="fill:var(--ink);font-weight:500">${fmt(s[s.length - 1].v)}</text>${mk}</svg>`;
+  const svg = el.firstChild, gx = $("#gx", svg), gd = $("#gd", svg);
+  svg.addEventListener("mousemove", e => { if (e.target.closest("[data-tip]")) return; const r = svg.getBoundingClientRect(), mx = e.clientX - r.left; let bi = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.abs(p[0] - mx); if (d < bd) { bd = d; bi = i; } }); const p = pts[bi]; gx.hidden = gd.hidden = false; gx.setAttribute("x1", p[0]); gx.setAttribute("x2", p[0]); gd.setAttribute("cx", p[0]); gd.setAttribute("cy", p[1]); showTip(o.tip(s[bi], s[bi - 1]), e.clientX, e.clientY); });
+  svg.addEventListener("mouseleave", () => { gx.hidden = gd.hidden = true; hideTip(); });
+}
+function drawGrowth() {
+  const el = $("#growthChart"); if (!el) return;
+  const s = HIST.snaps;
+  if (s.length < 2) { el.innerHTML = `<div class="empty">One snapshot saved so far (${fmt(s.length ? s[0].followers : M.profile.followersCount)} followers). Open Skygrowth again tomorrow on this browser and this line will start drawing.</div>`; return; }
+  lineChart(el, s.map(x => ({ t: x.t, v: x.followers })), { label: "Follower count over time", tip: (sn, pv) => `<b>${fmt(sn.v)} followers</b>${dateFmt(new Date(sn.t))}${pv ? `<br>${sn.v - pv.v >= 0 ? "+" : "−"}${fmt(Math.abs(sn.v - pv.v))} since previous snapshot` : ""}` });
+}
+function drawCurve() {
+  const el = $("#curveChart"); if (!el || !FD || !FD.list) return;
+  const L = FD.list, step = Math.max(1, Math.ceil(L.length / 300)), pts = [];
+  L.forEach((f, i) => { if (i % step === 0) pts.push({ t: f.t, v: i + 1 }); }); pts.push({ t: Date.now(), v: L.length });
+  const markers = [...M.orig].filter(p => p.credit > 0).sort((a, b) => b.credit - a.credit).slice(0, 10).map(p => ({ t: p.t.getTime(), href: p.url, html: `<b>${p.credit} new follows within 48h</b>${esc(dateFmt(p.t))} · ${fmt(p.eng)} engagement<br>${esc(trunc(p.text, 100))}` }));
+  lineChart(el, pts, { zero: true, label: "Current followers by the date they followed you", markers, tip: sn => `<b>${fmt(sn.v)} followers</b>by ${dateFmt(new Date(sn.t))}` });
+}
+function drawNewBars() {
+  const el = $("#newBars"); if (!el || !FD || !FD.list) return;
+  const mondayOf = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.getTime(); };
+  const thisWeek = mondayOf(Date.now()), first = mondayOf(FD.list[0].t), n = Math.min(52, Math.round((thisWeek - first) / (7 * 864e5)) + 1);
+  const ws = Array.from({ length: n }, (_, i) => ({ t: thisWeek - (n - 1 - i) * 7 * 864e5, c: 0, posts: 0 }));
+  FD.list.forEach(f => { const w = ws.find(w => w.t === mondayOf(f.t)); if (w) w.c++; }); M.orig.forEach(p => { const w = ws.find(w => w.t === mondayOf(p.t)); if (w) w.posts++; });
+  const W = el.clientWidth || 400, H = 160, m = { l: 34, r: 4, t: 8, b: 22 }, mx = Math.max(3, ...ws.map(w => w.c)), bw = (W - m.l - m.r) / n, Y = v => m.t + (1 - v / mx) * (H - m.t - m.b);
+  let g = ""; [0, Math.round(mx / 2), mx].forEach(v => { g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`; });
+  const bars = ws.map((w, i) => `<g${tipAttr(`<b>Week of ${esc(shortDate(new Date(w.t)))}</b>${fmt(w.c)} new followers<br>${w.posts} original posts`)}><rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/><rect x="${m.l + i * bw + 1}" y="${Y(w.c)}" width="${Math.max(2, bw - 2)}" height="${Math.max(0, H - m.b - Y(w.c))}" rx="2" fill="var(--accent)"/></g>`).join("");
+  el.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="New followers per week">${g}${bars}<text x="${m.l}" y="${H - 6}">${shortDate(new Date(ws[0].t))}</text><text x="${W - m.r}" y="${H - 6}" text-anchor="end">this week</text></svg>`;
+}
+function attrTable() {
+  if (!M.attr) return "";
+  const P = [...M.orig].filter(p => p.credit > 0).sort((a, b) => b.credit - a.credit).slice(0, 8), hasF = AUD && AUD.likesByPost;
+  if (!P.length) return "";
+  return `<h3>Posts followed by the most new followers</h3><div class="tw"><table><thead><tr><th>Date</th><th>Post</th><th class="n">New follows in 48h</th><th class="n">vs typical</th>${hasF ? `<th class="n" title="Likers who followed within a day of liking, from the posts sampled for likes">Fans who followed</th>` : ""}</tr></thead><tbody>${P.map(p => `<tr><td class="n">${shortDate(p.t)}</td><td class="txt"><a href="${esc(p.url)}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">${esc(trunc(p.text, 140)) || "(no text)"}</a></td><td class="n"><b>${fmt(p.credit)}</b></td><td class="n">${p.lift.toFixed(1)}×</td>${hasF ? `<td class="n">${p.fanF == null ? "—" : fmt(p.fanF)}</td>` : ""}</tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:12.5px">Each follow is credited to the latest original post made in the 48 hours before it. That is a rough estimate, since a follow can come from anywhere. "Fans who followed" is a firmer signal: people who liked the post and followed within a day of liking it.</p>`;
+}
+function renderGrowth() {
+  const s = HIST.snaps, prev = HIST.prev;
+  let changes = `<div class="empty">New and lost followers appear here from your second scan onward. Keep "Scan followers and likes" on.</div>`;
+  if (AUD && AUD.diff) {
+    const d = AUD.diff;
+    const li = (p, sign) => `<li><span class="${sign > 0 ? "up" : "down"} mono">${sign > 0 ? "+" : "−"}</span><a href="${profileUrl(p.handle)}" target="_blank" rel="noopener">@${esc(p.handle)}</a></li>`;
+    changes = `<div class="chips"><div class="chip"><b class="up">+${fmt(d.added.length)}</b><small>new since ${dateFmt(new Date(d.since))}</small></div><div class="chip"><b class="down">−${fmt(d.lost.length)}</b><small>unfollowed or deactivated</small></div></div>
+      <div class="grid2"><div><h3>New followers</h3>${d.added.length ? `<ul class="list">${d.added.slice(0, 12).map(p => li(p, 1)).join("")}</ul>${d.added.length > 12 ? `<p class="muted">and ${fmt(d.added.length - 12)} more</p>` : ""}` : `<p class="muted">None.</p>`}</div>
+      <div><h3>Lost followers</h3>${d.lost.length ? `<ul class="list">${d.lost.slice(0, 12).map(p => li(p, -1)).join("")}</ul>${d.lost.length > 12 ? `<p class="muted">and ${fmt(d.lost.length - 12)} more</p>` : ""}<p class="muted">Handles are as of your last scan. Some may be deactivated accounts.</p>` : `<p class="muted">None.</p>`}</div></div>`;
+  }
+  let prim = "";
+  if (FD && FD.error) prim = `<div class="empty">Follow dates couldn't be read: ${esc(FD.error)} The saved snapshots below still work.</div><div style="height:18px"></div>`;
+  else if (FD && FD.list) prim = `<h3>Followers by follow date</h3><div class="chart" id="curveChart"></div><div class="legend"><span><i style="background:var(--accent)"></i>People who currently follow you, by the date they followed</span><span><i style="border:2px solid var(--ink)"></i>Posts followed by the most new followers</span></div><p class="muted" style="font-size:12.5px;margin:8px 0 0">People who unfollowed since are missing, so earlier totals read a little low.${FD.complete ? "" : " Partial: only the first " + fmt(FD.list.length) + " follows were read."}</p><div style="height:18px"></div><h3>New followers per week</h3><div class="chart" id="newBars" style="min-height:150px"></div><div style="height:18px"></div>${attrTable()}<div style="height:22px"></div>`;
+  $("#growth").innerHTML = `<header><h2>Follower growth</h2><p>${FD && FD.list ? "Reconstructed from when each follow happened, so it works from your first visit. " : ""}${DEMO ? "Example data. " : ""}</p></header>${prim}
+    <h3>${FD && FD.list ? "Saved snapshots of your total" : "Follower total over time"} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">· ${s.length} snapshot${s.length === 1 ? "" : "s"}${DEMO ? "" : ", recorded in this browser"}</span></h3>
+    <div class="chart" id="growthChart"></div>
+    <div style="height:16px"></div>${changes}
+    ${DEMO ? "" : `<div class="tools" style="margin-top:14px"><button class="btn small" id="exportH">Export history</button><label class="btn small" for="importH">Import history</label><input type="file" id="importH" accept="application/json" class="sr"><span class="muted" style="font-size:12.5px">Back up before clearing browser data or switching browsers.</span></div>`}`;
+  drawGrowth(); drawCurve(); drawNewBars();
+  const ex = $("#exportH"); if (ex) ex.onclick = () => { const blob = new Blob([JSON.stringify(HIST)], { type: "application/json" }), a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `skygrowth-${M.profile.handle}.json`; a.click(); URL.revokeObjectURL(a.href); };
+  const im = $("#importH"); if (im) im.onchange = async () => { try { const j = JSON.parse(await im.files[0].text()); if (!Array.isArray(j.snaps)) throw 0; HIST = { snaps: [...new Map([...j.snaps, ...HIST.snaps].map(x => [Math.round(x.t / 6e4), x])).values()].sort((a, b) => a.t - b.t), prev: HIST.prev || j.prev }; saveHist(M.profile.did, HIST); renderProfile(); renderGrowth(); } catch { notice("That file isn't a Skygrowth history export.", true); } };
+}
+
+/* dot plots and tables, with your own posts and your replies to others kept separate */
+const postsOf = kind => kind === "reply" ? M.replies : M.orig;
+function drawPosts() { drawPostChart("orig"); drawPostChart("reply"); }
+function drawPostChart(kind) {
+  const el = $("#postsChart-" + kind); if (!el) return;
+  const P = postsOf(kind), W = el.clientWidth || 600, H = 250, m = { l: 40, r: 12, t: 12, b: 26 };
+  if (!P.length) { el.innerHTML = `<div class="empty">${kind === "reply" ? "No replies" : "No original posts"} found in the posts loaded.</div>`; return; }
+  const t0 = Math.min(...P.map(p => p.t)), t1 = Date.now(), mx = Math.max(1, ...P.map(p => p.eng)), L = v => Math.log10(v + 1), Lm = L(mx) * 1.05;
+  const X = t => m.l + (t - t0) / Math.max(1, t1 - t0) * (W - m.l - m.r), Y = v => m.t + (1 - L(v) / Lm) * (H - m.t - m.b);
+  let g = ""; [0, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000].filter(v => L(v) <= Lm).forEach(v => { const y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 8}" y="${y + 4}" text-anchor="end">${v}</text>`; });
+  let xt = ""; for (let i = 0; i < 5; i++) { const t = t0 + (t1 - t0) * i / 4; xt += `<text x="${X(t)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${shortDate(new Date(t))}</text>`; }
+  const med = median(P.map(p => p.eng)), my = Y(med);
+  const dots = P.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener"><circle class="dot ${kind === "reply" ? "rep" : ""}" cx="${X(p.t).toFixed(1)}" cy="${Y(p.eng).toFixed(1)}" r="${kind === "reply" ? 3.5 : 4.5}"${tipAttr(`<b>${fmt(p.eng)} engagement</b>${esc(dateFmt(p.t))}${kind === "reply" ? (p.replyTo ? " · replying to @" + esc(p.replyTo) : " (reply)") : " · " + esc(p.format)}<br>${esc(p.text.slice(0, 110))}${p.text.length > 110 ? "…" : ""}<br>${p.likes} likes · ${p.reposts} reposts · ${p.replies} replies · ${p.quotes} quotes`)}/></a>`).join("");
+  el.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="Engagement for each ${kind === "reply" ? "reply" : "post"} over time">${g}${xt}<line x1="${m.l}" x2="${W - m.r}" y1="${my}" y2="${my}" stroke="var(--ink2)" stroke-dasharray="5 4"/><text x="${W - m.r}" y="${my - 6}" text-anchor="end" class="halo" style="fill:var(--ink2)">median ${fmt(med)}</text>${dots}</svg>
+  <div class="legend"><span class="muted">Vertical scale is logarithmic so big hits don't flatten everything else.</span></div>`;
+}
+const postLimits = { orig: 10, reply: 10 };
+function topTable(kind) {
+  const P = [...postsOf(kind)].sort((a, b) => b[postMetric] - a[postMetric] || b.eng - a.eng), lim = postLimits[kind], isR = kind === "reply", att = !isR && M.attr;
+  const rows = P.slice(0, lim).map(p => `<tr><td class="n">${shortDate(p.t)}</td><td class="txt"><a href="${esc(p.url)}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">${esc(p.text.slice(0, 160)) || "<span class='muted'>(no text)</span>"}${p.text.length > 160 ? "…" : ""}</a></td><td>${isR ? (p.replyTo ? `<a href="${profileUrl(p.replyTo)}" target="_blank" rel="noopener" class="mono" style="font-size:12.5px">@${esc(p.replyTo)}</a>` : "—") : `<span class="pill">${esc(p.format)}</span>`}</td><td class="n">${fmt(p.likes)}</td><td class="n">${fmt(p.reposts)}</td><td class="n">${fmt(p.replies)}</td><td class="n">${fmt(p.quotes)}</td><td class="n"><b>${fmt(p.eng)}</b></td>${att ? `<td class="n">${fmt(p.credit)}</td>` : ""}</tr>`).join("");
+  return P.length ? `<div class="tw"><table><thead><tr><th>Date</th><th>${isR ? "Reply" : "Post"}</th><th>${isR ? "Replying to" : "Type"}</th><th class="n">Likes</th><th class="n">Reposts</th><th class="n">Replies</th><th class="n">Quotes</th><th class="n">Total</th>${att ? `<th class="n" title="Follows in the 48h after, credited to the latest post before each follow">New follows</th>` : ""}</tr></thead><tbody>${rows}</tbody></table></div>${P.length > lim ? `<p><button class="btn small" data-more="${kind}">Show more</button></p>` : ""}` : `<div class="empty">Nothing to show.</div>`;
+}
+function postBlock(kind) {
+  const P = postsOf(kind), isR = kind === "reply", engs = P.map(p => p.eng), best = P.length ? Math.max(...engs) : 0;
+  const rp = M.replies.length / Math.max(1, M.posts.length) * 100;
+  return `<div class="panel"><div class="tools" style="justify-content:space-between"><h3 style="margin:0">${isR ? "Your replies to other people" : "Your own posts"}</h3><span class="muted" style="font-size:13px">${isR ? "Posts you wrote in other people's threads." : "Top-level posts on your own profile, not replies."}</span></div>
+  <div class="chips"><div class="chip"><b>${fmt(P.length)}</b><small>${isR ? "replies" : "posts"} in the ${fmt(M.posts.length)} loaded${isR ? ` (${rp.toFixed(0)}% of your activity)` : ""}</small></div><div class="chip"><b>${fmt(median(engs))}</b><small>median engagement</small></div><div class="chip"><b>${fmt(best)}</b><small>best ${isR ? "reply" : "post"}</small></div><div class="chip"><b>${fmt(engs.reduce((a, b) => a + b, 0))}</b><small>total engagement</small></div></div>
+  <div class="chart" id="postsChart-${kind}"></div><div style="height:16px"></div><h3>Top ${isR ? "replies" : "posts"}</h3><div id="topTable-${kind}">${topTable(kind)}</div></div>`;
+}
+let postMetric = "eng";
+function renderPosts() {
+  const seg = (id, opts, cur) => `<div class="seg" id="${id}" role="group">${opts.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${cur === k}">${l}</button>`).join("")}</div>`;
+  $("#posts").innerHTML = `<header><h2>Every post, and the best ones</h2><p>Your own posts and your replies to others are listed separately. Each dot is one item. Click a dot or a row to open it on Bluesky.</p></header>
+    <div class="tools"><span class="muted" style="font-size:13px">Rank tables by</span>${seg("fMetric", [["eng", "Total"], ["likes", "Likes"], ["reposts", "Reposts"], ["replies", "Replies"], ["quotes", "Quotes"]], postMetric)}</div>
+    ${postBlock("orig")}${postBlock("reply")}`;
+  const wire = () => document.querySelectorAll("#posts [data-more]").forEach(b => { b.onclick = () => { const k = b.dataset.more; postLimits[k] += 15; $("#topTable-" + k).innerHTML = topTable(k); wire(); }; });
+  wire();
+  $("#fMetric").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; postMetric = b.dataset.k; $("#fMetric").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); postLimits.orig = postLimits.reply = 10; ["orig", "reply"].forEach(k => { $("#topTable-" + k).innerHTML = topTable(k); }); wire(); });
+  drawPosts();
+}
+
+/* bars */
+function barGroup(title, rows, note) {
+  if (!rows.length) return `<div><h3>${esc(title)}</h3><div class="empty">Not enough posts.</div></div>`;
+  const max = Math.max(1, ...rows.map(r => r.med));
+  return `<div><h3>${esc(title)}</h3><div class="bars">${rows.map(r => `<div class="brow ${r.n < 5 ? "dim" : ""}"${tipAttr(`<b>${esc(r.key)}</b>Median ${fmt(r.med)} · average ${r.mean.toFixed(1)}<br>${fmt(r.n)} posts${r.n < 5 ? " (too few to trust)" : ""}`)}><span class="lab">${esc(r.key)}</span><div class="track"><div class="fill" style="width:${(r.med / max * 100).toFixed(1)}%"></div></div><span class="val">${fmt(r.med)} · n=${fmt(r.n)}</span></div>`).join("")}</div>${note ? `<p class="muted" style="font-size:12.5px;margin:10px 0 0">${note}</p>` : ""}</div>`;
+}
+function renderKinds() {
+  $("#kinds").innerHTML = `<header><h2>What kind of post works</h2><p>Median engagement per original post. Faded bars have fewer than 5 posts. Medians are used so one viral post doesn't skew a group.</p></header>
+  <div class="grid2">${barGroup("Format", M.byFormat)}${barGroup("Length", M.byLength)}</div><div style="height:22px"></div><div class="grid2">${barGroup("Style", M.byStyle)}<div><h3>Weekly posting</h3><div class="chart" id="weekChart" style="min-height:150px"></div></div></div>`;
+  drawWeeks();
+}
+function drawWeeks() {
+  const el = $("#weekChart"); if (!el) return;
+  const W = el.clientWidth || 400, H = 170, m = { l: 26, r: 4, t: 8, b: 22 }, ws = M.weeks, mx = Math.max(3, ...ws.map(w => w.orig + w.rep)), bw = (W - m.l - m.r) / ws.length;
+  const Y = v => m.t + (1 - v / mx) * (H - m.t - m.b);
+  let g = ""; [0, Math.round(mx / 2), mx].forEach(v => { g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`; });
+  const bars = ws.map((w, i) => { const x = m.l + i * bw + 1, bwid = Math.max(2, bw - 2), h0 = Y(w.orig), h1 = Y(w.orig + w.rep); return `<g${tipAttr(`<b>Week of ${esc(shortDate(new Date(w.t)))}</b>${w.orig} original · ${w.rep} replies<br>${w.engs.length ? "Median engagement " + fmt(median(w.engs)) : "No original posts"}`)}><rect x="${x}" y="${m.t}" width="${bwid}" height="${H - m.t - m.b}" fill="transparent"/><rect x="${x}" y="${h0}" width="${bwid}" height="${Math.max(0, H - m.b - h0)}" rx="2" fill="var(--accent)"/><rect x="${x}" y="${h1}" width="${bwid}" height="${Math.max(0, h0 - h1 - 1)}" rx="2" fill="var(--accent)" opacity=".35"/></g>`; }).join("");
+  el.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="Posts per week">${g}${bars}<text x="${m.l}" y="${H - 6}">${shortDate(new Date(ws[0].t))}</text><text x="${W - m.r}" y="${H - 6}" text-anchor="end">this week</text></svg><div class="legend"><span><i style="background:var(--accent)"></i>Original</span><span><i style="background:var(--accent);opacity:.35"></i>Replies</span></div>`;
+}
+
+/* heatmap */
+function renderTiming() {
+  const cells = []; M.heat.forEach((row, d) => row.forEach((c, b) => { if (c.n >= 2) cells.push({ d, b, ...c }); }));
+  const max = Math.max(1, ...cells.map(c => c.med)), top = [...cells].filter(c => c.n >= 3).sort((a, b) => b.med - a.med).slice(0, 3);
+  const isTop = (d, b) => top.some(c => c.d === d && c.b === b);
+  let html = `<div class="heat"><span></span>${BLOCK_SHORT.map(l => `<span class="hl hc">${l}</span>`).join("")}`;
+  M.heat.forEach((row, d) => { html += `<span class="hl">${DAYS[d]}</span>` + row.map((c, b) => {
+    const label = `<b>${DAYS[d]} ${BLOCKS[b]}</b>${c.n ? `Median engagement ${fmt(c.med)}<br>${fmt(c.n)} post${c.n === 1 ? "" : "s"}${c.n < 3 ? " (too few to trust)" : ""}` : "No posts"}`;
+    if (!c.n) return `<div class="cell none"${tipAttr(label)}></div>`;
+    const k = c.n < 2 ? 6 : 14 + 86 * (c.med / max);
+    return `<div class="cell ${isTop(d, b) ? "best" : ""}" style="background:color-mix(in srgb, var(--accent) ${k.toFixed(0)}%, var(--surface))" tabindex="0"${tipAttr(label)}></div>`; }).join(""); });
+  html += `</div><div class="scale"><span>lower</span><i></i><span>higher median engagement</span></div>`;
+  $("#timing").innerHTML = `<header><h2>When to post</h2><p>Median engagement by weekday and 3-hour window, in your browser's timezone. Outlined cells are the top windows with at least 3 posts.</p></header>
+    <div class="grid2"><div>${html}</div><div><h3>Strongest windows</h3>${top.length ? `<ul class="list">${top.map((c, i) => `<li><b>${DAYS[c.d]} ${BLOCKS[c.b]}</b><span class="mono muted">median ${fmt(c.med)} · n=${c.n}</span></li>`).join("")}</ul>` : `<div class="empty">No window has 3 or more posts yet.</div>`}
+    <h3 style="margin-top:18px">By weekday</h3>${barGroup("", M.byDay.map(d => ({ ...d, key: DAYS[d.key] })).sort((a, b) => DAYS.indexOf(a.key) - DAYS.indexOf(b.key))).replace("<h3></h3>", "")}</div></div>`;
+}
+
+/* audience */
+let ampMin = 1000, ampHide = false, ampLimit = 25;
+function renderAmps(state) {
+  const el = $("#amps"), head = `<header><h2>Amplifier candidates</h2><p>Mutuals (you follow them, they follow you) ranked by audience size. A reply, like or repost from a bigger account puts you in front of people who don't know you yet.</p></header>`;
+  if (!AUD || !AUD.amp) { el.innerHTML = head + `<div class="empty">${state === "loading" ? "Scanning…" : AUD && AUD.ampError ? "Couldn't look up your mutuals: " + esc(AUD.ampError) : 'Turn on "Scan followers and likes" and "Find amplifiers", then analyze again.'}</div>`; return; }
+  const me = M.profile.followersCount, all = AUD.amp, big = all.filter(r => r.p.followersCount >= ampMin);
+  let rows = big.filter(r => !ampHide || (!r.likes && !r.rep)).sort((a, b) => b.p.followersCount - a.p.followersCount);
+  const untapped = big.filter(r => !r.likes && !r.rep), top10 = rows.slice(0, 10).reduce((a, r) => a + r.p.followersCount, 0);
+  const tag = r => r.rep ? `<span class="pill">Reposts you</span>` : r.likes ? `<span class="pill">Likes your posts</span>` : `<span class="pill" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Untapped</span>`;
+  const body = rows.slice(0, ampLimit).map(r => { const p = r.p, age = Math.max(30, (Date.now() - new Date(p.createdAt)) / 864e5), ppw = (p.postsCount || 0) / age * 7;
+    return `<tr><td><div class="person">${avatar(p, "sm")}<div><a href="${profileUrl(p.handle)}" target="_blank" rel="noopener">${esc(p.displayName || p.handle)}<small class="mono">@${esc(p.handle)}</small></a></div></div></td><td class="n"><b>${compact(p.followersCount)}</b></td><td class="n">${me ? (p.followersCount / me).toFixed(1) + "×" : "—"}</td><td class="n">${ppw.toFixed(1)}</td><td class="n">${r.likes}</td><td class="n">${r.rep}</td><td>${tag(r)}</td></tr>`; }).join("");
+  const opt = (v, l) => `<option value="${v}" ${ampMin === v ? "selected" : ""}>${l}</option>`;
+  el.innerHTML = head + `<div class="chips"><div class="chip"><b>${fmt(all.length)}</b><small>mutuals looked up${AUD.ampCapped ? " (first 1,500)" : ""}</small></div><div class="chip"><b>${fmt(big.length)}</b><small>with ${compact(ampMin)}+ followers</small></div><div class="chip"><b>${fmt(untapped.length)}</b><small>of those haven't engaged with you</small></div><div class="chip"><b>${compact(top10)}</b><small>combined followers of the top 10 shown (overlap likely)</small></div></div>
+    <div class="tools"><label class="chk">Minimum followers <select id="ampMin">${opt(500, "500")}${opt(1000, "1,000")}${opt(5000, "5,000")}${opt(10000, "10,000")}${opt(50000, "50,000")}${opt(100000, "100,000")}</select></label><label class="chk"><input type="checkbox" id="ampHide" ${ampHide ? "checked" : ""}> Hide accounts that already engage</label></div>
+    ${body ? `<div class="tw"><table><thead><tr><th>Account</th><th class="n">Followers</th><th class="n">vs you</th><th class="n" title="Lifetime average posts per week">Posts / wk</th><th class="n" title="Your sampled recent posts they liked">Likes you</th><th class="n" title="Your recent posts they reposted">Reposts you</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div>${rows.length > ampLimit ? `<p><button class="btn small" id="ampMore">Show more</button></p>` : ""}` : `<div class="empty">No mutuals match these filters.</div>`}
+    <p class="muted" style="font-size:12.5px">Follower count is reach, not fit. Pick accounts whose audience cares about your topic, and earn the repost: reply with something useful, or quote their post with a real addition. Asking outright rarely works. Likes and reposts are counted from your recent posts only.</p>`;
+  $("#ampMin").onchange = e => { ampMin = +e.target.value; ampLimit = 25; renderAmps(); };
+  $("#ampHide").onchange = e => { ampHide = e.target.checked; ampLimit = 25; renderAmps(); };
+  const mb = $("#ampMore"); if (mb) mb.onclick = () => { ampLimit += 25; renderAmps(); };
+}
+function renderAudience(state) {
+  renderAmps(state);
+  const el = $("#audience"), head = `<header><h2>Audience</h2><p>Who engages with you, and who follows. Based on likes from your most recent posts (up to 100 likes per post).</p></header>`;
+  if (state === "off") { el.innerHTML = head + `<div class="empty">Audience scan is off. Turn on "Scan followers and likes" and analyze again.</div>`; return; }
+  if (state === "loading") { el.innerHTML = head + `<div class="empty">Scanning followers and likes…</div>`; return; }
+  if (!AUD) { el.innerHTML = head + `<div class="empty">Audience data isn't available.</div>`; return; }
+  const A = AUD, rel = A.fans && A.followersComplete;
+  let fans = A.fans || [];
+  if (audOnlyFans && rel) fans = fans.filter(f => !f.follows);
+  const rows = fans.slice(0, 15).map(f => `<tr><td><div class="person">${avatar(f.p, "sm")}<div><a href="${profileUrl(f.p.handle)}" target="_blank" rel="noopener">${esc(f.p.displayName || f.p.handle)}<small class="mono">@${esc(f.p.handle)}</small></a></div></div></td><td class="n">${f.n}</td>${rel ? `<td>${f.follows ? `<span class="yes">Follows you</span>` : `<span class="no">Not following</span>`}</td><td>${f.followed ? `<span class="yes">You follow</span>` : `<span class="no">—</span>`}</td>` : ""}</tr>`).join("");
+  const chips = `<div class="chips">
+    ${A.followersComplete ? `<div class="chip"><b>${fmt(A.mutuals)}</b><small>mutuals (${Math.round(A.mutualPct)}% of followers)</small></div><div class="chip"><b>${fmt(A.notBack)}</b><small>you follow, they don't follow back</small></div><div class="chip"><b>${fmt(A.fansNotFollowing)}</b><small>regular fans not following you</small></div>` : `<div class="chip"><b>${fmt(A.followers.length)}</b><small>followers scanned (account is larger than the scan limit, so follow-back stats are hidden)</small></div>`}
+    <div class="chip"><b>${fmt(A.sampled)}</b><small>recent posts sampled for likes</small></div></div>`;
+  el.innerHTML = head + chips + `<div class="tools"><h3 style="margin:0">Most engaged people</h3>${rel ? `<label class="chk"><input type="checkbox" id="onlyFans" ${audOnlyFans ? "checked" : ""}> Only people who don't follow me</label>` : ""}</div>` +
+    (rows ? `<div class="tw"><table><thead><tr><th>Person</th><th class="n">Posts liked</th>${rel ? "<th>Follows you</th><th>You follow</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">No likes found in the sampled posts.</div>`);
+  const cb = $("#onlyFans"); if (cb) cb.onchange = () => { audOnlyFans = cb.checked; renderAudience(); };
+}
+
+function renderBlocks() {
+  const el = $("#blocks"), head = `<header><h2>Blocks</h2><p>Accounts that have blocked you, read from public block records. Blocks through moderation lists aren't included.</p></header>`;
+  if (!BD) { el.innerHTML = head + `<div class="empty">Turn on "Check blocks" and analyze again.</div>`; return; }
+  if (BD.error) { el.innerHTML = head + `<div class="empty">Blocks couldn't be read: ${esc(BD.error)}</div>`; return; }
+  const L = BD.list, n = L.length, f = M.profile.followersCount;
+  if (!n) { el.innerHTML = head + `<div class="empty">No accounts were found blocking you.</div>`; return; }
+  const l30 = L.filter(b => b.t > Date.now() - 30 * 864e5).length;
+  const P = [...M.orig].filter(p => p.bcredit > 0).sort((a, b) => b.bcredit - a.bcredit || b.eng - a.eng).slice(0, 5);
+  el.innerHTML = head + `<div class="chips"><div class="chip"><b>${fmt(n)}</b><small>accounts blocking you</small></div><div class="chip"><b>${f ? (n / f * 1000).toFixed(1) : "—"}</b><small>blockers per 1,000 followers</small></div><div class="chip"><b>${fmt(l30)}</b><small>blocked you in the last 30 days</small></div></div>
+    ${n >= 3 ? `<h3>Blockers over time</h3><div class="chart" id="blockCurve"></div><p class="muted" style="font-size:12.5px;margin:8px 0 0">Accounts that blocked you and later unblocked aren't counted.</p><div style="height:18px"></div>` : ""}
+    ${P.length ? `<h3>Posts followed by the most blocks</h3><div class="tw"><table><thead><tr><th>Date</th><th>Post</th><th class="n">Blocks in 48h</th><th class="n">Engagement</th></tr></thead><tbody>${P.map(p => `<tr><td class="n">${shortDate(p.t)}</td><td class="txt"><a href="${esc(p.url)}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">${esc(trunc(p.text, 140)) || "(no text)"}</a></td><td class="n"><b>${p.bcredit}</b></td><td class="n">${fmt(p.eng)}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:12.5px">Each block is credited to the latest original post made in the 48 hours before it, which is a rough estimate.</p><div style="height:14px"></div>` : ""}
+    <div id="blockList"><button class="btn small" id="showBlockers">Show accounts</button></div>`;
+  drawBlockCurve();
+  $("#showBlockers").onclick = async () => {
+    const box = $("#blockList"); box.innerHTML = `<div class="empty">Loading accounts…</div>`;
+    try {
+      const recent = [...L].reverse().slice(0, 200), profs = await (DEMO ? demoSource : liveSource).profiles(recent.map(b => b.did)), by = new Map(profs.map(p => [p.did, p]));
+      box.innerHTML = `<p class="muted" style="font-size:12.5px">Blocking is a personal boundary. This list is here to help you understand your reach, not to contact or respond to these accounts.</p><div class="tw"><table><thead><tr><th>Account</th><th>Blocked you</th></tr></thead><tbody>${recent.map(b => { const p = by.get(b.did); return `<tr><td>${p ? `<div class="person">${avatar(p, "sm")}<div><a href="${profileUrl(p.handle)}" target="_blank" rel="noopener">${esc(p.displayName || p.handle)}<small class="mono">@${esc(p.handle)}</small></a></div></div>` : `<span class="muted mono">${esc(b.did)} (account no longer available)</span>`}</td><td class="mono">${dateFmt(new Date(b.t))}</td></tr>`; }).join("")}</tbody></table></div>${L.length > 200 ? `<p class="muted">Showing the 200 most recent of ${fmt(L.length)}.</p>` : ""}`;
+    } catch (e) { box.innerHTML = `<div class="empty">Couldn't load accounts: ${esc(e.message)}</div>`; }
+  };
+}
+function drawBlockCurve() {
+  const el = $("#blockCurve"); if (!el || !BD || !BD.list) return;
+  const pts = BD.list.map((b, i) => ({ t: b.t, v: i + 1 })); pts.push({ t: Date.now(), v: BD.list.length });
+  const markers = [...M.orig].filter(p => p.bcredit > 0).sort((a, b) => b.bcredit - a.bcredit).slice(0, 5).map(p => ({ t: p.t.getTime(), href: p.url, html: `<b>${p.bcredit} blocks within 48h</b>${esc(dateFmt(p.t))}<br>${esc(trunc(p.text, 100))}` }));
+  lineChart(el, pts, { zero: true, label: "Accounts blocking you over time", markers, tip: sn => `<b>${fmt(sn.v)} blockers</b>by ${dateFmt(new Date(sn.t))}` });
+}
+function redrawCharts() { if (!M) return; drawBlockCurve(); drawGrowth(); drawCurve(); drawNewBars(); drawPosts(); drawWeeks(); }
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(redrawCharts, 120); });
+
+
+/* ---------- peer comparison ---------- */
+const profCache = new Map();
+let PEER = null, peerMetric = "rate", peerTargetLimit = 15;
+const STOP = new Set("the a an and or but if of to in on at for with from by as is are was were be been it its this that these those i me my we our you your they them their he she his her not no so do does did have has had will would can could just about more most very what when where who how why than then there here also into out up down over all any some one get got like new today".split(" "));
+const FEATS = [
+  { l: "Has an image", f: p => p.format === "Image" },
+  { l: "Has a video", f: p => p.format === "Video" },
+  { l: "Link card", f: p => p.format === "Link card" },
+  { l: "Text only", f: p => p.format === "Text only" },
+  { l: "Quote post", f: p => p.format.startsWith("Quote") },
+  { l: "Asks a question", f: p => p.text.includes("?") },
+  { l: "Invites replies", f: p => /\b(reply|replies|comment|tell me|let me know|thoughts|what do you|what's your|your turn|drop a|share your)\b/i.test(p.text) },
+  { l: "Asks for a repost", f: p => /\b(repost|retweet|share this|spread the word|pass it on|boost)\b/i.test(p.text) },
+  { l: "Asks for a follow", f: p => /\bfollow (me|for|along|us)\b/i.test(p.text) },
+  { l: "Thread or link cue", f: p => /(https?:\/\/|link below|link in|read more|🧵|👇|\bthread\b)/i.test(p.text) },
+  { l: "Uses a hashtag", f: p => p.tag },
+  { l: "Uses an emoji", f: p => /\p{Extended_Pictographic}/u.test(p.text) }
+];
+const share = (arr, f) => arr.length ? arr.filter(f).length / arr.length * 100 : 0;
+const dist = (arr, key, n) => { const d = Array(n).fill(0); arr.forEach(p => d[p[key]]++); return d.map(v => arr.length ? v / arr.length * 100 : 0); };
+const argmax = a => a.indexOf(Math.max(...a));
+const wordsOf = arr => { const m = new Map(); arr.forEach(p => { new Set((p.text.toLowerCase().replace(/https?:\/\/\S+|@\S+/g, " ").match(/[a-z][a-z'’-]{2,}/g) || []).filter(w => !STOP.has(w))).forEach(w => m.set(w, (m.get(w) || 0) + 1)); }); return m; };
+
+let peerKind = "orig", peerSel = "all", bpAcct = "all", bpFmt = "all", bpSort = "rel", bpLimit = 10, peerWord = null;
+const perWeekOf = arr => arr.filter(p => p.t.getTime() > Date.now() - 56 * 864e5).length / 8;
+
+function initPeers() {
+  $("#peers").innerHTML = `<header><h2>Compare with similar accounts</h2><p>Finds accounts you follow with a similar follower count, then compares their posts and replies with yours and how your audiences overlap. Pick any account to look closer.</p></header>
+  <div class="tools"><label class="chk">Accounts <select id="peerN"><option>10</option><option selected>15</option><option>20</option></select></label>
+  <label class="chk">Follower range <select id="peerTol"><option value="10">±10%</option><option value="20" selected>±20%</option><option value="30">±30%</option><option value="50">±50%</option></select></label>
+  <label class="chk">Compare top <select id="peerTop"><option>10</option><option>20</option><option>30</option></select> posts</label>
+  <label class="chk" title="Reads up to 2,000 recent followers of each account. Takes longer."><input type="checkbox" id="peerAud" checked> Include audience overlap</label>
+  <button class="btn primary" type="button" id="peerGo">Find and compare</button></div>
+  <div id="peerStatus" class="muted mono" style="font-size:13px;min-height:20px" aria-live="polite"></div><div id="peerOut" style="scroll-margin-top:70px"></div>`;
+  $("#peerGo").onclick = () => { if (M) runPeers(); };
+  renderPeers();
+}
+
+async function runPeers() {
+  const btn = $("#peerGo"), src = DEMO ? demoSource : liveSource, me = M.profile, setS = t => { $("#peerStatus").textContent = t || ""; };
+  btn.disabled = true; PEER = null; renderPeers("working");
+  try {
+    const tol = +$("#peerTol").value / 100, want = +$("#peerN").value, topN = +$("#peerTop").value, wantAud = $("#peerAud").checked;
+    let follows = AUD && AUD.followsList;
+    if (!follows) { setS("Reading accounts you follow…"); follows = await src.follows(me.did, 3000, n => setS(`Reading accounts you follow… ${fmt(n)}`)); }
+    const need = follows.map(f => f.did).filter(d => !profCache.has(d)), chunks = []; for (let i = 0; i < need.length; i += 25) chunks.push(need.slice(i, i + 25));
+    let done = 0; await mapLimit(chunks, 4, async c => { (await src.profiles(c)).forEach(p => profCache.set(p.did, p)); setS(`Checking follower counts… ${Math.min(need.length, ++done * 25)} of ${need.length}`); });
+    const lo = me.followersCount * (1 - tol), hi = me.followersCount * (1 + tol);
+    const cands = follows.map(f => profCache.get(f.did)).filter(p => p && p.followersCount >= lo && p.followersCount <= hi).sort((a, b) => Math.abs(a.followersCount - me.followersCount) - Math.abs(b.followersCount - me.followersCount));
+    const picked = cands.slice(0, want);
+    if (picked.length < 3) { PEER = { tooFew: true, found: cands.length, tol }; return; }
+    done = 0;
+    const analyzed = await mapLimit(picked, 3, async p => { let items = []; try { items = await src.feed(p.did, 400, () => {}, "posts_with_replies"); } catch (e) { } setS(`Reading posts from similar accounts… ${++done} of ${picked.length}`); return { p, A: analyze(p, items) }; });
+    const all = analyzed.filter(x => x.A.orig.length >= 15).map((x, i) => ({ ...x, i }));
+    if (all.length < 3) { PEER = { tooFew: true, found: all.length, tol, thin: true }; return; }
+    let aud = null;
+    if (wantAud) {
+      let mine = AUD && AUD.followers; if (!mine) { setS("Reading your followers…"); mine = await src.followers(me.did, 5000, n => setS(`Reading your followers… ${fmt(n)}`)); }
+      const mset = new Set(mine.map(f => f.did)), fset = new Set(follows.map(f => f.did)); done = 0;
+      const lists = await mapLimit(all, 3, async x => { let L = []; try { L = await src.followers(x.p.did, 2000, () => {}); } catch (e) { } setS(`Reading audiences of similar accounts… ${++done} of ${all.length}`); return L; });
+      const union = new Map(); lists.forEach((L, i) => L.forEach(f => { let e = union.get(f.did); if (!e) { e = { p: f, peers: [] }; union.set(f.did, e); } e.peers.push(i); }));
+      let inter = 0; union.forEach((e, d) => { if (mset.has(d)) inter++; });
+      const targets = [...union.values()].filter(e => !mset.has(e.p.did) && e.p.did !== me.did && e.peers.length >= 2).sort((a, b) => b.peers.length - a.peers.length).slice(0, 40).map(e => ({ ...e, followed: fset.has(e.p.did) }));
+      aud = { mineN: mset.size, unionN: union.size, inter, per: lists.map(L => ({ n: L.length, shared: L.filter(f => mset.has(f.did)).length })), targets, followingSome: [...mset].filter(d => union.has(d)).length };
+    }
+    PEER = { all, topN, aud, tol, found: cands.length, cache: {} };
+    peerSel = "all"; peerWord = null; bpAcct = "all"; bpFmt = "all"; bpLimit = 10;
+  } catch (e) { PEER = { error: e.message || String(e) }; }
+  finally { btn.disabled = false; setS(""); renderPeers(); }
+}
+
+function viewPeers(kind) {
+  return PEER.all.map(x => { const arr = kind === "reply" ? x.A.replies : x.A.orig, top = [...arr].sort((a, b) => b.eng - a.eng).slice(0, PEER.topN), med = median(arr.map(p => p.eng)); return { i: x.i, p: x.p, A: x.A, arr, top, med, rate: med / x.p.followersCount * 100, topAvg: mean(top.map(t => t.eng)), ppw: perWeekOf(arr) }; }).filter(v => v.arr.length >= 15);
+}
+function peerReport(kind) { if (!PEER.cache[kind]) PEER.cache[kind] = buildPeerReport(kind); return PEER.cache[kind]; }
+
+function buildPeerReport(kind) {
+  const peers = viewPeers(kind), topN = PEER.topN, aud = PEER.aud, me = M.profile, myArr = postsOf(kind);
+  if (!myArr.length || peers.length < 3) return { thin: true, kind, n: peers.length, mine: !myArr.length };
+  const myTop = [...myArr].sort((a, b) => b.eng - a.eng).slice(0, topN), ptops = peers.flatMap(x => x.top.map(p => ({ ...p, peer: x.p, pi: x.i }))), unit = kind === "reply" ? "reply" : "original post";
+  const myMed = median(myArr.map(p => p.eng));
+  const you = { name: "You", you: true, followers: me.followersCount, med: myMed, rate: myMed / me.followersCount * 100, topAvg: mean(myTop.map(t => t.eng)), ppw: perWeekOf(myArr), n: myArr.length };
+  const rows = [you, ...peers.map(x => ({ name: "@" + x.p.handle, i: x.i, handle: x.p.handle, followers: x.p.followersCount, med: x.med, rate: x.rate, topAvg: x.topAvg, ppw: x.ppw, n: x.arr.length }))];
+  const feats = FEATS.map(ft => ({ l: ft.l, fn: ft.f, you: share(myTop, ft.f), peer: share(ptops, ft.f) })).map(f => ({ ...f, gap: f.peer - f.you })).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+  const lenYou = median(myTop.map(p => p.len)), lenPeer = median(ptops.map(p => p.len));
+  const youTopRate = median(myTop.map(p => p.eng)) / me.followersCount * 100, peerTopRate = median(ptops.map(p => p.eng / p.peer.followersCount * 100));
+  const bY = dist(myTop, "block", 8), bP = dist(ptops, "block", 8), dY = dist(myTop, "dow", 7), dP = dist(ptops, "dow", 7);
+  const wy = wordsOf(myTop), wp = wordsOf(ptops), minDf = Math.max(3, Math.round(ptops.length * .08));
+  const words = [...wp].filter(([, c]) => c >= minDf).sort((a, b) => b[1] - a[1]).slice(0, 18).map(([w, c]) => ({ w, peer: c / ptops.length * 100, you: (wy.get(w) || 0) / Math.max(1, myTop.length) * 100 }));
+  const bestPosts = [...ptops];
+  const rank = [...rows].sort((a, b) => b.rate - a.rate).findIndex(r => r.you) + 1, peerRates = peers.map(x => x.rate);
+  const ins = [], x = r => r.toFixed(1) + "×";
+  ins.push({ h: `You rank #${rank} of ${rows.length} on engagement rate`, b: `A typical ${unit} of yours earns ${you.rate.toFixed(2)}% of your follower count in engagement. The typical similar account earns ${median(peerRates).toFixed(2)}%.`, n: myArr.length });
+  const ratio = (peerTopRate + .001) / (youTopRate + .001);
+  ins.push({ h: ratio >= 1.2 ? `Their best ${kind === "reply" ? "replies" : "posts"} earn ${x(ratio)} yours, per follower` : ratio <= .83 ? `Your best ${kind === "reply" ? "replies" : "posts"} beat theirs by ${x(1 / ratio)}, per follower` : `Your best ${kind === "reply" ? "replies" : "posts"} are on par with theirs`, b: `Median engagement of the top ${topN}, divided by followers: ${youTopRate.toFixed(2)}% for you, ${peerTopRate.toFixed(2)}% for similar accounts (${fmt(ptops.length)} items).`, n: ptops.length });
+  feats.filter(f => Math.abs(f.gap) >= 20).slice(0, 4).forEach(f => ins.push({ h: `${f.l}: ${Math.round(f.peer)}% of their top ${kind === "reply" ? "replies" : "posts"} vs ${Math.round(f.you)}% of yours`, b: f.gap > 0 ? "They use this in their best items far more often than you do. Worth testing in a few of yours." : "You lean on this more than they do, so it isn't what sets their best items apart.", n: ptops.length }));
+  if (Math.abs(lenPeer - lenYou) >= 30) ins.push({ h: lenPeer > lenYou ? "Their top items are longer" : "Their top items are shorter", b: `Median ${fmt(lenPeer)} characters for similar accounts vs ${fmt(lenYou)} for you.`, n: ptops.length });
+  const bm = argmax(bP), by = argmax(bY), dm = argmax(dP), dyy = argmax(dY);
+  if (bm !== by || dm !== dyy) ins.push({ h: `Their best ${kind === "reply" ? "replies" : "posts"} cluster on ${DAYS_FULL[dm]} around ${BLOCKS[bm]}`, b: `Yours cluster on ${DAYS_FULL[dyy]} around ${BLOCKS[by]}. Timing uses your browser's timezone for everyone, so treat this as a loose hint.`, n: ptops.length });
+  const pm = median(peers.map(x => x.ppw));
+  if (pm / Math.max(.1, you.ppw) >= 1.3 || pm / Math.max(.1, you.ppw) <= .7) ins.push({ h: pm > you.ppw ? `Similar accounts ${kind === "reply" ? "reply" : "post"} more often` : `You ${kind === "reply" ? "reply" : "post"} more often than similar accounts`, b: `${pm.toFixed(1)} per week for the typical similar account, ${you.ppw.toFixed(1)} for you (last 8 weeks).`, n: peers.length });
+  if (aud) {
+    ins.push({ h: `${Math.round(aud.followingSome / Math.max(1, aud.mineN) * 100)}% of your followers also follow at least one of these accounts`, b: "That shared audience already likes your kind of content. Based on up to 2,000 recent followers per account.", n: aud.mineN });
+    if (aud.targets.length) ins.push({ h: `${aud.targets.length}+ people follow two or more of them but not you`, b: "They're interested in this topic and haven't found you yet. See the list below.", n: aud.targets.length });
+  }
+  return { kind, peers, topN, aud, tol: PEER.tol, found: PEER.found, rows, feats, myTop, myArr, ptops, lenYou, lenPeer, youTopRate, peerTopRate, bY, bP, dY, dP, words, bestPosts, ins, nTops: ptops.length, you };
+}
+
+function pairedCols(labels, a, b, tipLabel) {
+  const mx = Math.max(1, ...a, ...b);
+  return `<div class="pc" style="grid-template-columns:repeat(${labels.length},1fr)">${labels.map((l, i) => `<div class="pg"${tipAttr(`<b>${esc(tipLabel(i))}</b>You ${a[i].toFixed(0)}% · Similar accounts ${b[i].toFixed(0)}%`)}><div class="pgb"><i style="height:${a[i] / mx * 100}%;background:var(--you)"></i><i style="height:${b[i] / mx * 100}%;background:var(--peer)"></i></div><span>${l}</span></div>`).join("")}</div>`;
+}
+function lens(r1, r2, d) { if (d >= r1 + r2) return 0; if (d <= Math.abs(r1 - r2)) return Math.PI * Math.min(r1, r2) ** 2; return r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1)) + r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2)) - .5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2)); }
+function vennSvg(A, B, I) {
+  const r1 = Math.sqrt(A / Math.PI), r2 = Math.sqrt(B / Math.PI); let lo = Math.abs(r1 - r2), hi = r1 + r2;
+  for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; if (lens(r1, r2, mid) > I) lo = mid; else hi = mid; }
+  const d = I <= 0 ? r1 + r2 + Math.max(r1, r2) * .15 : (lo + hi) / 2, W = 380, H = 220, k = Math.min((W - 20) / (r1 + d + r2), (H - 20) / (2 * Math.max(r1, r2))), R1 = r1 * k, R2 = r2 * k, D = d * k, tot = R1 + D + R2, x1 = (W - tot) / 2 + R1, x2 = x1 + D, cy = H / 2;
+    return `<svg class="venn" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:440px" role="img" aria-label="Audience overlap between you and similar accounts"><circle cx="${x1}" cy="${cy}" r="${R1}" fill="var(--you)" fill-opacity=".5" stroke="var(--you)" stroke-width="2"/><circle cx="${x2}" cy="${cy}" r="${R2}" fill="var(--peer)" fill-opacity=".5" stroke="var(--peer)" stroke-width="2"/>
+</svg>`;
+}
+
+const csvCell = v => { let t = String(v ?? ""); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+function downloadCsv(name, rows) { const blob = new Blob([rows.map(r => r.map(csvCell).join(",")).join("\n")], { type: "text/csv" }), a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+const featTags = p => FEATS.filter(f => f.f(p)).map(f => `<span class="pill f">${esc(f.l)}</span>`).join("");
+const peerPost = p => `<div class="pp"><span class="meta">${p.peer ? `<a href="${profileUrl(p.peer.handle)}" target="_blank" rel="noopener" style="color:inherit">@${esc(p.peer.handle)}</a> · ` : ""}${p.isReply ? "reply" + (p.replyTo ? " to @" + esc(p.replyTo) : "") : esc(p.format)} · ${fmt(p.eng)} engagement${p.peer ? ` (${(p.eng / p.peer.followersCount * 100).toFixed(1)}% of followers)` : ""} · ${shortDate(p.t)}</span><a class="t" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(trunc(p.text, 240)) || "(no text)"}</a><span>${featTags(p)}</span></div>`;
+
+function peerDetail(v, R) {
+  const p = v.p, you = R.you, a = PEER.aud && PEER.aud.per[v.i], kw = R.kind === "reply" ? "replies" : "posts";
+  const mix = FEATS.map(ft => ({ l: ft.l, you: share(R.myArr, ft.f), peer: share(v.arr, ft.f) })).map(f => ({ ...f, gap: f.peer - f.you })).sort((x, y) => Math.abs(y.gap) - Math.abs(x.gap)).slice(0, 8);
+  const rowHtml = f => `<div class="frow"><span>${esc(f.l)}</span><div class="two"><div><i style="width:${f.you * .9}%;background:var(--you)"></i><span>${f.you.toFixed(0)}%</span></div><div><i style="width:${f.peer * .9}%;background:var(--peer)"></i><span>${f.peer.toFixed(0)}%</span></div></div><span class="gap">${Math.abs(f.gap) < 5 ? "similar" : (f.gap > 0 ? "them +" : "you +") + Math.abs(f.gap).toFixed(0) + " pts"}</span></div>`;
+  const cmp = (a1, b1, f) => `${f(a1)} <span class="muted">vs ${f(b1)} yours</span>`;
+  return `<div class="panel"><div class="tools" style="justify-content:space-between"><div class="person" style="min-width:0">${avatar(p, "")}<div><b style="font-size:16px">${esc(p.displayName || p.handle)}</b> <a href="${profileUrl(p.handle)}" target="_blank" rel="noopener" class="mono" style="font-size:12.5px">@${esc(p.handle)}</a><br><span class="muted" style="font-size:13px">${fmt(p.followersCount)} followers · ${fmt(p.followsCount || 0)} following · ${fmt(p.postsCount || 0)} posts total</span></div></div><button class="btn small" id="peerClear">Back to all accounts</button></div>
+  ${p.description ? `<p class="muted" style="font-size:13.5px;margin:10px 0 0">${esc(trunc(p.description, 240))}</p>` : ""}
+  <div class="chips" style="margin-top:14px"><div class="chip"><b>${cmp(v.med, you.med, fmt)}</b><small>median engagement (${fmt(v.arr.length)} ${kw})</small></div><div class="chip"><b>${cmp(v.rate, you.rate, x => x.toFixed(2) + "%")}</b><small>engagement rate</small></div><div class="chip"><b>${cmp(v.topAvg, you.topAvg, fmt)}</b><small>top-${R.topN} average</small></div><div class="chip"><b>${cmp(v.ppw, you.ppw, x => x.toFixed(1))}</b><small>${kw} per week</small></div>${a ? `<div class="chip"><b>${Math.round(a.shared / Math.max(1, a.n) * 100)}%</b><small>of ${fmt(a.n)} sampled followers also follow you</small></div>` : ""}</div>
+  <div class="grid2"><div><h3>How they ${R.kind === "reply" ? "reply" : "post"}, across all their ${kw}</h3><div class="key"><span><i style="background:var(--you)"></i>You</span><span><i style="background:var(--peer)"></i>@${esc(p.handle)}</span></div><div style="display:grid;gap:10px">${mix.map(rowHtml).join("")}</div></div>
+  <div><h3>Their top ${Math.min(10, v.top.length)} ${kw}</h3>${v.top.slice(0, 10).map(t => peerPost({ ...t, peer: p })).join("")}</div></div></div>`;
+}
+
+function renderPeers(state) {
+  const el = $("#peerOut"); if (!el) return;
+  const P0 = PEER;
+  if (state === "working") { el.innerHTML = `<div class="empty">Working. This can take a minute or two, especially with audience overlap on.</div>`; return; }
+  if (!P0) { el.innerHTML = `<div class="empty">Press <b>Find and compare</b> to pick accounts you follow with a similar following and compare them with you.${DEMO ? "" : " It makes a few hundred requests to Bluesky, so it runs only when you ask."}</div>`; return; }
+  if (P0.error) { el.innerHTML = `<div class="empty">${esc(P0.error)}</div>`; return; }
+  if (P0.tooFew) { el.innerHTML = `<div class="empty">${P0.thin ? "Too few of the similar accounts have enough posts to compare." : `Only ${P0.found} account${P0.found === 1 ? "" : "s"} you follow ${P0.found === 1 ? "has" : "have"} between ${compact(Math.round(M.profile.followersCount * (1 - P0.tol)))} and ${compact(Math.round(M.profile.followersCount * (1 + P0.tol)))} followers.`} Widen the follower range and run it again.</div>`; return; }
+  const R = peerReport(peerKind), kw = peerKind === "reply" ? "replies" : "posts";
+  const sel = `<select id="peerSel" aria-label="Look closer at an account"><option value="all">All accounts</option>${P0.all.map(x => `<option value="${x.i}" ${String(peerSel) === String(x.i) ? "selected" : ""}>@${esc(x.p.handle)}</option>`).join("")}</select>`;
+  const kindSeg = `<div class="seg" id="peerKind" role="group">${[["orig", "Original posts"], ["reply", "Replies to others"]].map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${peerKind === k}">${l}</button>`).join("")}</div>`;
+  const bar = `<div class="tools">${kindSeg}<label class="chk">Look closer at ${sel}</label>${R.thin ? "" : `<button class="btn small" id="csvAcct">Accounts CSV</button><button class="btn small" id="csvPosts">Top ${kw} CSV</button>`}</div>`;
+  if (R.thin) { el.innerHTML = bar + `<div class="empty">${R.mine ? `No ${kw === "replies" ? "replies" : "original posts"} of yours in the loaded posts to compare.` : `Only ${R.n} of the similar accounts have 15 or more ${kw === "replies" ? "replies" : "original posts"} in their recent activity, so there isn't enough to compare.`}</div>`; wirePeers(R); return; }
+  const v = peerSel !== "all" ? R.peers.find(x => String(x.i) === String(peerSel)) : null;
+  const ml = { rate: ["Engagement rate", r => r.rate.toFixed(2) + "%"], med: ["Median engagement", r => fmt(r.med)], topAvg: ["Top average", r => fmt(r.topAvg)], ppw: [kw === "replies" ? "Replies per week" : "Posts per week", r => r.ppw.toFixed(1)] }[peerMetric];
+  const sorted = [...R.rows].sort((a, b) => b[peerMetric] - a[peerMetric]), mx = Math.max(1e-9, ...sorted.map(r => r[peerMetric]));
+  const seg = `<div class="seg" id="peerSeg" role="group">${[["rate", "Rate"], ["med", "Median"], ["topAvg", "Top"], ["ppw", "Per week"]].map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${peerMetric === k}">${l}</button>`).join("")}</div>`;
+  const bars = sorted.map(r => `<div class="brow pr ${r.you ? "me" : ""}"${tipAttr(`<b>${esc(r.name)}</b>${fmt(r.followers)} followers · ${fmt(r.n)} ${kw}<br>Median engagement ${fmt(r.med)} · rate ${r.rate.toFixed(2)}%<br>Top average ${fmt(r.topAvg)} · ${r.ppw.toFixed(1)} per week`)}><span class="lab">${r.you ? "You" : `<button type="button" class="lk" data-i="${r.i}">${esc(r.name)}</button>`}</span><div class="track"><div class="fill ${r.you ? "you" : "peer"}" style="width:${(r[peerMetric] / mx * 100).toFixed(1)}%"></div></div><span class="val">${ml[1](r)}</span></div>`).join("");
+  const feat = R.feats.map(f => { const hi = Math.abs(f.gap) >= 20, mine = R.myTop.filter(f.fn).slice(0, 4), theirs = R.ptops.filter(f.fn).sort((a, b) => b.eng / b.peer.followersCount - a.eng / a.peer.followersCount).slice(0, 5);
+    return `<details class="frd"><summary><div class="frow"><span>${esc(f.l)} <span class="muted" style="font-size:11px" aria-hidden="true">▾</span></span><div class="two"><div><i style="width:${f.you * .9}%;background:var(--you)"></i><span>${f.you.toFixed(0)}%</span></div><div><i style="width:${f.peer * .9}%;background:var(--peer)"></i><span>${f.peer.toFixed(0)}%</span></div></div><span class="gap ${hi ? "hi" : ""}">${Math.abs(f.gap) < 5 ? "similar" : (f.gap > 0 ? "them +" : "you +") + Math.abs(f.gap).toFixed(0) + " pts"}</span></div></summary><div class="inner"><div><h3>Yours</h3>${mine.length ? mine.map(peerPost).join("") : `<p class="muted" style="font-size:13px">None of your top ${R.topN} have this.</p>`}</div><div><h3>Theirs</h3>${theirs.length ? theirs.map(peerPost).join("") : `<p class="muted" style="font-size:13px">None of their top ${kw} have this.</p>`}</div></div></details>`; }).join("");
+  const wordPanel = peerWord ? (() => { const rx = new RegExp("\\b" + peerWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i"); const th = R.ptops.filter(p => rx.test(p.text)).sort((a, b) => b.eng / b.peer.followersCount - a.eng / a.peer.followersCount).slice(0, 6), mi = R.myArr.filter(p => rx.test(p.text)).sort((a, b) => b.eng - a.eng).slice(0, 4); return `<div class="panel" style="margin-top:12px"><h3>Posts using “${esc(peerWord)}”</h3><div class="grid2"><div><h3>Theirs</h3>${th.map(peerPost).join("") || `<p class="muted">None.</p>`}</div><div><h3>Yours</h3>${mi.map(peerPost).join("") || `<p class="muted">You haven't used it.</p>`}</div></div></div>`; })() : "";
+  let bp = [...R.bestPosts]; if (bpAcct !== "all") bp = bp.filter(p => String(p.pi) === String(bpAcct)); if (bpFmt !== "all") bp = bp.filter(p => p.format === bpFmt);
+  bp.sort((a, b) => bpSort === "rel" ? b.eng / b.peer.followersCount - a.eng / a.peer.followersCount : b.eng - a.eng);
+  const fmts = [...new Set(R.bestPosts.map(p => p.format))];
+  const bestHtml = `<h3>Their best ${kw}</h3><div class="tools"><label class="chk">Account <select id="bpAcct"><option value="all">All</option>${R.peers.map(x => `<option value="${x.i}" ${String(bpAcct) === String(x.i) ? "selected" : ""}>@${esc(x.p.handle)}</option>`).join("")}</select></label>${peerKind === "orig" ? `<label class="chk">Format <select id="bpFmt"><option value="all">All</option>${fmts.map(f => `<option ${bpFmt === f ? "selected" : ""}>${esc(f)}</option>`).join("")}</select></label>` : ""}<label class="chk">Sort by <select id="bpSort"><option value="rel" ${bpSort === "rel" ? "selected" : ""}>Engagement vs audience size</option><option value="raw" ${bpSort === "raw" ? "selected" : ""}>Raw engagement</option></select></label><span class="muted" style="font-size:12.5px">${fmt(bp.length)} match</span></div>${bp.slice(0, bpLimit).map(peerPost).join("") || `<div class="empty">No matches.</div>`}${bp.length > bpLimit ? `<p><button class="btn small" id="bpMore">Show more</button></p>` : ""}`;
+  let audHtml;
+  if (R.aud) {
+    const a = R.aud, per = R.peers.map(x => ({ x, ...a.per[x.i] })).sort((u, w) => w.shared / Math.max(1, w.n) - u.shared / Math.max(1, u.n));
+    const tg = a.targets.slice(0, peerTargetLimit).map(t => `<tr><td><div class="person">${avatar(t.p, "sm")}<div><a href="${profileUrl(t.p.handle)}" target="_blank" rel="noopener">${esc(t.p.displayName || t.p.handle)}<small class="mono">@${esc(t.p.handle)}</small></a></div></div></td><td class="n">${t.peers.length}</td><td class="muted" style="font-size:12.5px">${esc(t.peers.slice(0, 3).map(i => "@" + P0.all[i].p.handle).join(", "))}${t.peers.length > 3 ? " +" + (t.peers.length - 3) : ""}</td><td>${t.followed ? `<span class="yes">You follow</span>` : `<span class="no">—</span>`}</td></tr>`).join("");
+    audHtml = `<div class="grid2"><div><h3>Audience overlap</h3>${vennSvg(a.mineN, a.unionN, a.inter)}<div class="key"><span><i style="background:var(--you);opacity:.6"></i>Only you <b class="mono">${fmt(a.mineN - a.inter)}</b></span><span><i style="background:color-mix(in srgb, var(--you) 50%, var(--peer))"></i>Both <b class="mono">${fmt(a.inter)}</b></span><span><i style="background:var(--peer);opacity:.6"></i>Only them <b class="mono">${fmt(a.unionN - a.inter)}</b></span></div><p class="muted" style="font-size:12.5px;margin:6px 0 0">Your ${fmt(a.mineN)} followers against up to 2,000 recent followers of each of the ${P0.all.length} accounts, combined (${fmt(a.unionN)} people). "Only them" is a floor, since older followers aren't read.</p></div>
+      <div><h3>Overlap with each account</h3><div class="bars">${per.slice(0, 15).map(u => `<div class="brow pr"${tipAttr(`<b>@${esc(u.x.p.handle)}</b>${fmt(u.shared)} of ${fmt(u.n)} sampled followers also follow you`)}><span class="lab">@${esc(u.x.p.handle)}</span><div class="stack"><i style="width:${u.shared / Math.max(1, u.n) * 100}%;background:var(--you)"></i><i style="width:${(1 - u.shared / Math.max(1, u.n)) * 100}%;background:var(--peer);opacity:.75"></i></div><span class="val">${Math.round(u.shared / Math.max(1, u.n) * 100)}%</span></div>`).join("")}</div>
+      <div class="key"><span><i style="background:var(--you)"></i>also follow you</span><span><i style="background:var(--peer);opacity:.75"></i>don't follow you yet</span></div></div></div>
+      <div style="height:20px"></div><h3>Followed by several similar accounts, not by you</h3>
+      ${tg ? `<div class="tw"><table><thead><tr><th>Person</th><th class="n">Accounts followed</th><th>Which ones</th><th>You follow</th></tr></thead><tbody>${tg}</tbody></table></div>${a.targets.length > peerTargetLimit ? `<p><button class="btn small" id="tgMore">Show more</button></p>` : ""}` : `<div class="empty">No one follows two or more of these accounts without following you.</div>`}
+      <p class="muted" style="font-size:12.5px">These people follow accounts like yours, so they likely care about your topic. Engage with their posts and let your own work introduce you. Mass-following or unsolicited messages tends to get you muted or blocked.</p>`;
+  } else audHtml = `<div class="empty">Audience overlap wasn't requested. Turn on "Include audience overlap" and run again.</div>`;
+  const acctRows = [...R.peers].sort((a, b) => b.rate - a.rate).map(x => { const au = P0.aud && P0.aud.per[x.i]; return `<tr><td><button type="button" class="lk" data-i="${x.i}">@${esc(x.p.handle)}</button></td><td class="n">${fmt(x.p.followersCount)}</td><td class="n">${fmt(x.arr.length)}</td><td class="n">${fmt(x.med)}</td><td class="n">${x.rate.toFixed(2)}%</td><td class="n">${fmt(x.topAvg)}</td><td class="n">${x.ppw.toFixed(1)}</td><td class="n">${au ? Math.round(au.shared / Math.max(1, au.n) * 100) + "%" : "—"}</td></tr>`; }).join("");
+  el.innerHTML = bar + `<p class="muted" style="font-size:13px;margin:0 0 14px">Comparing your ${kw === "replies" ? "replies" : "own posts"} with ${R.peers.length} accounts you follow with ${compact(Math.round(M.profile.followersCount * (1 - R.tol)))}–${compact(Math.round(M.profile.followersCount * (1 + R.tol)))} followers${R.found > P0.all.length ? ` (${R.found} matched, the closest ${P0.all.length} used)` : ""}. Top means each account's ${R.topN} highest-engagement ${kw === "replies" ? "replies" : "original posts"}.</p>
+  ${v ? peerDetail(v, R) : ""}
+  <ul class="finds">${R.ins.map(i => `<li><b>${esc(i.h)}</b><p>${esc(i.b)}</p><span class="tag ${i.n < 10 ? "low" : ""}">n = ${fmt(i.n)}</span></li>`).join("")}</ul>
+  <div style="height:22px"></div>
+  <div class="tools"><h3 style="margin:0">How you compare</h3>${seg}<span class="muted" style="font-size:12.5px">Click an account to look closer.</span></div><div class="bars">${bars}</div>
+  <div class="key"><span><i style="background:var(--you)"></i>You</span><span><i style="background:var(--peer);opacity:.75"></i>Similar accounts</span><span>Rate is median engagement divided by followers.</span></div>
+  <div style="height:22px"></div>
+  <h3>What their top ${kw} have that yours might not</h3><div class="key"><span><i style="background:var(--you)"></i>Your top ${R.topN}</span><span><i style="background:var(--peer)"></i>Their top ${R.topN} each (${fmt(R.nTops)} items)</span><span>Median length ${fmt(R.lenYou)} vs ${fmt(R.lenPeer)} characters</span><span>Click a row to see the ${kw}.</span></div>
+  <div>${feat}</div>
+  <div style="height:22px"></div>
+  <div class="grid2"><div><h3>When the top ${kw} went out, by time of day</h3>${pairedCols(BLOCK_SHORT, R.bY, R.bP, i => BLOCKS[i])}</div><div><h3>By weekday</h3>${pairedCols(DAYS, R.dY, R.dP, i => DAYS_FULL[i])}</div></div>
+  <div class="key"><span><i style="background:var(--you)"></i>You</span><span><i style="background:var(--peer)"></i>Similar accounts</span><span>Share of top ${kw}. Times use your browser's timezone for everyone.</span></div>
+  <div style="height:14px"></div>
+  ${R.words.length ? `<h3>Words in their top ${kw}</h3><div class="wchips">${R.words.map(w => `<button type="button" data-w="${esc(w.w)}" aria-pressed="${peerWord === w.w}" style="font:inherit;cursor:pointer;background:${peerWord === w.w ? "var(--accent-soft)" : "transparent"};color:var(--ink);border:1px solid ${peerWord === w.w ? "var(--accent)" : "var(--line)"};border-radius:999px;padding:3px 10px;font-size:13px">${esc(w.w)}<small style="color:var(--muted);font:11px var(--f-mono);margin-left:6px">them ${Math.round(w.peer)}% · you ${Math.round(w.you)}%</small></button>`).join("")}</div>${wordPanel}<div style="height:22px"></div>` : ""}
+  ${bestHtml}
+  <div style="height:26px"></div>${audHtml}
+  <details class="more" style="margin-top:18px" open><summary>The accounts compared</summary><div class="tw"><table><thead><tr><th>Account</th><th class="n">Followers</th><th class="n">${kw === "replies" ? "Replies" : "Posts"} read</th><th class="n">Median</th><th class="n">Rate</th><th class="n">Top avg</th><th class="n">Per wk</th><th class="n" title="Share of their sampled followers who also follow you">Shared</th></tr></thead><tbody>${acctRows}</tbody></table></div></details>`;
+  wirePeers(R);
+}
+
+function wirePeers(R) {
+  const rr = () => renderPeers(), g = id => document.getElementById(id);
+  const top = () => { const o = g("peerOut"); if (o) o.scrollIntoView({ block: "start" }); };
+  g("peerKind").onclick = e => { const b = e.target.closest("button"); if (b) { peerKind = b.dataset.k; peerWord = null; bpAcct = "all"; bpFmt = "all"; bpLimit = 10; rr(); } };
+  g("peerSel").onchange = e => { peerSel = e.target.value; rr(); if (peerSel !== "all") top(); };
+  if (R.thin) return;
+  const pick = e => { const b = e.target.closest("button[data-i]"); if (b) { peerSel = b.dataset.i; rr(); top(); } };
+  g("peerOut").onclick = e => {
+    pick(e);
+    const w = e.target.closest("button[data-w]"); if (w) { peerWord = peerWord === w.dataset.w ? null : w.dataset.w; rr(); }
+    if (e.target.closest("#peerClear")) { peerSel = "all"; rr(); }
+    if (e.target.closest("#bpMore")) { bpLimit += 15; rr(); }
+    if (e.target.closest("#tgMore")) { peerTargetLimit += 25; rr(); }
+    const sg = e.target.closest("#peerSeg button"); if (sg) { peerMetric = sg.dataset.k; rr(); }
+  };
+  g("peerOut").onchange = e => {
+    if (e.target.id === "bpAcct") { bpAcct = e.target.value; bpLimit = 10; rr(); }
+    if (e.target.id === "bpFmt") { bpFmt = e.target.value; bpLimit = 10; rr(); }
+    if (e.target.id === "bpSort") { bpSort = e.target.value; rr(); }
+  };
+  g("csvAcct").onclick = () => downloadCsv(`similar-accounts-${R.kind}.csv`, [["handle", "followers", "items_read", "median_engagement", "engagement_rate_pct", "top_avg_engagement", "per_week", "shared_followers_pct"], ...R.rows.filter(r => !r.you).map(r => { const au = PEER.aud && PEER.aud.per[r.i]; return [r.handle, r.followers, r.n, r.med, r.rate.toFixed(3), r.topAvg.toFixed(1), r.ppw.toFixed(2), au ? (au.shared / Math.max(1, au.n) * 100).toFixed(1) : ""]; })]);
+  g("csvPosts").onclick = () => downloadCsv(`similar-accounts-top-${R.kind === "reply" ? "replies" : "posts"}.csv`, [["account", "followers", "date", "type", "text", "likes", "reposts", "replies", "quotes", "engagement", "engagement_pct_of_followers", "url"], ...R.bestPosts.map(p => [p.peer.handle, p.peer.followersCount, p.t.toISOString(), p.isReply ? "reply" : p.format, p.text, p.likes, p.reposts, p.replies, p.quotes, p.eng, (p.eng / p.peer.followersCount * 100).toFixed(2), p.url])]);
+}
+
+
+/* ---------- common mutuals with another account ---------- */
+let COM = null, comTab = "shared", comLimit = 25, comSort = "followers";
+const COM_TABS = [["shared", "Shared mutuals", "People who follow you and follow back, and also follow them and are followed back. The warmest introductions."], ["both", "You both follow", "Accounts you each follow. Shows shared interests."], ["audience", "Follow you both", "People who follow both of you. Your shared audience."], ["warm", "Their mutuals who don't follow you", "People who are mutuals with them but don't follow you yet. Candidates to win over."]];
+function initCommon() {
+  $("#common").innerHTML = `<header><h2>Common mutuals</h2><p>Enter another Bluesky account to see who you both know: mutuals you share, accounts you both follow, and people who follow you both.</p></header>
+  <div class="tools"><label class="chk" style="flex:1 1 240px">Other account <input type="text" id="comHandle" placeholder="theirname.bsky.social" autocomplete="off" autocapitalize="off" spellcheck="false" style="flex:1;min-width:0"></label><button class="btn primary" type="button" id="comGo">Find common mutuals</button></div>
+  <div id="comStatus" class="muted mono" style="font-size:13px;min-height:20px" aria-live="polite"></div><div id="comOut"></div>`;
+  $("#comGo").onclick = () => { if (M) runCommon(); };
+  $("#comHandle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (M) runCommon(); } });
+  renderCommon();
+}
+async function runCommon() {
+  const btn = $("#comGo"), setS = t => { $("#comStatus").textContent = t || ""; }, src = DEMO ? demoSource : liveSource, me = M.profile, cap = 5000;
+  let h = $("#comHandle").value.trim().replace(/^@/, "").replace(/^https?:\/\/bsky\.app\/profile\//, "").split(/[/?#\s]/)[0].toLowerCase();
+  btn.disabled = true; COM = null; comTab = "shared"; comLimit = 25; renderCommon("working");
+  try {
+    if (!h) { if (DEMO) { h = "example.bsky.social"; $("#comHandle").value = h; } else throw new Error("Enter a Bluesky handle, like theirname.bsky.social."); }
+    if (!h.includes(".") && !h.startsWith("did:")) h += ".bsky.social";
+    setS("Loading their profile…");
+    const them = DEMO ? { did: "did:plc:other" + Array.from(h).reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7), handle: h, displayName: "Example account", followersCount: 800, followsCount: 300 } : await src.profile(h);
+    if (them.did === me.did) throw new Error("That's your own account. Enter someone else's handle.");
+    let mine = AUD && AUD.followers, mineF = AUD && AUD.followsList;
+    if (!mine) { setS("Reading your followers…"); mine = await src.followers(me.did, cap, n => setS(`Reading your followers… ${fmt(n)}`)); }
+    if (!mineF) { setS("Reading accounts you follow…"); mineF = await src.follows(me.did, cap, n => setS(`Reading accounts you follow… ${fmt(n)}`)); }
+    setS("Reading their followers…"); const tF = await src.followers(them.did, cap, n => setS(`Reading their followers… ${fmt(n)}`));
+    setS("Reading accounts they follow…"); const tG = await src.follows(them.did, cap, n => setS(`Reading accounts they follow… ${fmt(n)}`));
+    const byDid = new Map(); [mine, mineF, tF, tG].forEach(L => L.forEach(a => { if (!byDid.has(a.did)) byDid.set(a.did, a); }));
+    const A = new Set(mine.map(a => a.did)), B = new Set(mineF.map(a => a.did)), C = new Set(tF.map(a => a.did)), D = new Set(tG.map(a => a.did));
+    const ex = d => d !== me.did && d !== them.did, pick = fn => [...byDid.keys()].filter(d => ex(d) && fn(d));
+    const lists = {
+      shared: pick(d => A.has(d) && B.has(d) && C.has(d) && D.has(d)),
+      both: pick(d => B.has(d) && D.has(d)),
+      audience: pick(d => A.has(d) && C.has(d)),
+      warm: pick(d => C.has(d) && D.has(d) && !A.has(d))
+    };
+    const need = [...new Set([...lists.shared, ...lists.both, ...lists.audience, ...lists.warm])].filter(d => !profCache.has(d)).slice(0, 600);
+    for (let i = 0; i < need.length; i += 25) { setS(`Looking up accounts… ${fmt(Math.min(need.length, i + 25))} of ${fmt(need.length)}`); try { (await src.profiles(need.slice(i, i + 25))).forEach(p => profCache.set(p.did, p)); } catch (e) { } }
+    const prof = d => profCache.get(d) || byDid.get(d) || { did: d, handle: d };
+    const out = {}; for (const k in lists) out[k] = lists[k].map(prof);
+    const tol = (n, got) => n == null || got >= n - Math.max(5, n * .01);
+    COM = { them, lists: out, youFollowThem: B.has(them.did), theyFollowYou: C.has(me.did) || A.has(them.did), complete: { mineF: tol(me.followsCount, mineF.length), mine: tol(me.followersCount, mine.length), tF: tol(them.followersCount, tF.length), tG: tol(them.followsCount, tG.length) }, tFn: tF.length, tGn: tG.length };
+    COM.theyFollowYou = A.has(them.did); COM.youFollowThem = B.has(them.did);
+  } catch (e) { COM = { error: e.message || String(e) }; }
+  finally { btn.disabled = false; setS(""); renderCommon(); }
+}
+function renderCommon(state) {
+  const el = $("#comOut"); if (!el) return;
+  if (state === "working") { el.innerHTML = `<div class="empty">Working. This reads both accounts' follower and following lists, so big accounts take a minute.</div>`; return; }
+  if (!COM) { el.innerHTML = `<div class="empty">Run the main analysis first, then enter an account and press <b>Find common mutuals</b>.${DEMO ? " In example mode you can leave the box empty." : ""}</div>`; return; }
+  if (COM.error) { el.innerHTML = `<div class="empty">${esc(COM.error)}</div>`; return; }
+  const C = COM, t = C.them, L = C.lists[comTab] || [], meta = COM_TABS.find(x => x[0] === comTab);
+  const rows = [...L].sort((a, b) => comSort === "name" ? (a.displayName || a.handle).localeCompare(b.displayName || b.handle) : (b.followersCount || 0) - (a.followersCount || 0));
+  const body = rows.slice(0, comLimit).map(p => `<tr><td><div class="person">${avatar(p, "sm")}<div><a href="${profileUrl(p.handle)}" target="_blank" rel="noopener">${esc(p.displayName || p.handle)}<small class="mono">@${esc(p.handle)}</small></a></div></div></td><td class="n">${p.followersCount != null ? "<b>" + compact(p.followersCount) + "</b>" : "—"}</td><td class="muted bio" style="font-size:12.5px;max-width:42ch">${esc(trunc(p.description || "", 110))}</td></tr>`).join("");
+  const partial = !(C.complete.mine && C.complete.mineF && C.complete.tF && C.complete.tG);
+  const rel = C.youFollowThem && C.theyFollowYou ? "You follow each other" : C.youFollowThem ? "You follow them; they don't follow you" : C.theyFollowYou ? "They follow you; you don't follow them" : "Neither follows the other";
+  const union = new Set(Object.values(C.lists).flat().map(p => p.did)).size;
+  el.innerHTML = `<div class="chips"><div class="chip"><b>${fmt(C.lists.shared.length)}</b><small>shared mutuals with ${esc(t.displayName || t.handle)}</small></div><div class="chip"><b>${fmt(C.lists.both.length)}</b><small>accounts you both follow</small></div><div class="chip"><b>${fmt(C.lists.audience.length)}</b><small>people follow you both</small></div><div class="chip"><b style="font-size:15px;line-height:1.3;display:block">${esc(rel)}</b><small>@${esc(t.handle)}</small></div></div>
+  ${partial ? `<div class="empty" style="margin-bottom:12px">One or more lists were too large to read in full (limit 5,000 each), so these counts are a floor. Real overlap is likely higher.</div>` : ""}
+  <div class="ctabs" role="group" aria-label="Overlap type">${COM_TABS.map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${k === comTab}">${l}<small>${fmt(C.lists[k].length)}</small></button>`).join("")}</div>
+  <p class="muted" style="font-size:13px;margin:0 0 10px">${meta[2]}</p>
+  <div class="tools"><label class="chk">Sort by <select id="comSort"><option value="followers" ${comSort === "followers" ? "selected" : ""}>Followers</option><option value="name" ${comSort === "name" ? "selected" : ""}>Name</option></select></label><button class="btn small" type="button" id="comCsv" ${L.length ? "" : "disabled"}>Download CSV</button></div>
+  ${body ? `<div class="tw"><table><thead><tr><th>Account</th><th class="n">Followers</th><th class="bio">Bio</th></tr></thead><tbody>${body}</tbody></table></div>${rows.length > comLimit ? `<p><button class="btn small" id="comMore">Show more (${fmt(rows.length - comLimit)} left)</button></p>` : ""}` : `<div class="empty">Nobody here.</div>`}
+  <p class="muted" style="font-size:12.5px">${comTab === "shared" ? "Shared mutuals are good people to tag in a reply or ask for a mention, because both of you already have a relationship with them. " : comTab === "warm" ? "These people already follow them. A reply or follow from you on a post you both care about is a natural opening. " : ""}Based on public follower lists read just now. Accounts that block either of you may be missing.</p>`;
+  el.querySelectorAll(".ctabs button").forEach(b => b.onclick = () => { comTab = b.dataset.t; comLimit = 25; renderCommon(); });
+  $("#comSort").onchange = e => { comSort = e.target.value; comLimit = 25; renderCommon(); };
+  const mb = $("#comMore"); if (mb) mb.onclick = () => { comLimit += 25; renderCommon(); };
+  $("#comCsv").onclick = () => downloadCsv(`common-${comTab}-${t.handle}.csv`, [["handle", "display name", "followers", "bio", "profile"], ...rows.map(p => [p.handle, p.displayName || "", p.followersCount ?? "", (p.description || "").replace(/\s+/g, " "), profileUrl(p.handle)])]);
+}
+
+/* ---------- fan balance: who engages with you vs who you engage with ---------- */
+let BAL = null, balLimit = 12;
+const tot3 = e => e.likes + e.reposts + e.replies;
+const acts = e => { const a = []; if (e.likes) a.push(e.likes + (e.likes === 1 ? " like" : " likes")); if (e.reposts) a.push(e.reposts + (e.reposts === 1 ? " repost" : " reposts")); if (e.replies) a.push(e.replies + (e.replies === 1 ? " reply" : " replies")); return a.join(" · ") || "nothing"; };
+
+function initBalance() {
+  $("#balance").innerHTML = `<header><h2>Fan balance</h2><p>Who engages with you, who you engage with, and where it isn't mutual. Based on your recent posts and your own recent likes, replies and reposts.</p></header>
+  <div class="tools"><label class="muted" style="font-size:13px" for="balWin">Time frame</label><select id="balWin" aria-label="Fan balance time frame"><optgroup label="Recent posts"><option value="n:10">Last 10 posts</option><option value="n:20">Last 20 posts</option><option value="n:40" selected>Last 40 posts</option><option value="n:75">Last 75 posts</option><option value="n:100">Last 100 posts</option></optgroup><optgroup label="Date range"><option value="d:7">Last 7 days</option><option value="d:14">Last 14 days</option><option value="d:30">Last 30 days</option><option value="d:60">Last 60 days</option><option value="d:90">Last 90 days</option><option value="c">Custom dates…</option></optgroup></select><span id="balCustom" hidden style="display:inline-flex;gap:6px;align-items:center"><input type="date" id="balFrom" aria-label="From date"><span class="muted">to</span><input type="date" id="balTo" aria-label="To date"></span><button class="btn primary" type="button" id="balGo">Analyze fan balance</button><span id="balStatus" class="muted mono" style="font-size:13px" aria-live="polite"></span></div><div id="balOut"></div>`;
+  const fmtD = d => d.toISOString().slice(0, 10), now = new Date();
+  $("#balTo").value = fmtD(now); $("#balFrom").value = fmtD(new Date(now - 30 * 864e5));
+  $("#balWin").onchange = () => { const c = $("#balCustom"), on = $("#balWin").value === "c"; c.hidden = !on; c.style.display = on ? "inline-flex" : "none"; };
+  $("#balWin").onchange();
+  $("#balGo").onclick = () => { if (M) runBalance(); };
+  renderBalance();
+}
+
+async function runBalance() {
+  const btn = $("#balGo"), setS = t => { $("#balStatus").textContent = t || ""; }, src = DEMO ? demoSource : liveSource, me = M.profile;
+  btn.disabled = true; BAL = null; renderBalance("working");
+  try {
+    if (!AUD || !AUD.likesByPost) throw new Error('Fan balance needs the audience scan. Turn on "Scan followers and likes" and analyze again.');
+    const win = $("#balWin").value, DAY = 864e5; let t0, t1 = Date.now(), posts, label;
+    if (win[0] === "n") { const n = +win.slice(2); posts = M.orig.slice(0, n); t0 = posts.length ? Math.min(...posts.map(p => p.t.getTime())) : 0; label = `your last ${posts.length} posts`; }
+    else {
+      if (win[0] === "d") { const d = +win.slice(2); t0 = Date.now() - d * DAY; label = `your posts from the last ${d} days`; }
+      else { const f = $("#balFrom").value, e = $("#balTo").value; if (!f || !e) throw new Error("Pick both a start and an end date."); t0 = new Date(f + "T00:00:00").getTime(); t1 = new Date(e + "T23:59:59").getTime(); if (t0 > t1) throw new Error("The start date is after the end date."); label = `your posts from ${shortDate(new Date(t0))} to ${shortDate(new Date(t1))}`; }
+      posts = M.orig.filter(p => p.t.getTime() >= t0 && p.t.getTime() <= t1);
+    }
+    if (!posts.length) throw new Error("You have no original posts in that time frame in the loaded feed. Try a wider range or load more posts.");
+    const feedOldest = Math.min(...M.items.map(it => new Date((it.reason && it.reason.indexedAt) || it.post.record.createdAt || it.post.indexedAt).getTime()).filter(Number.isFinite));
+    const feedShort = t0 < feedOldest - DAY;
+    const likesMap = new Map(AUD.likesByPost), extra = posts.filter(p => p.likes > 0 && !likesMap.has(p.uri)).slice(0, 100); let ld = 0;
+    await mapLimit(extra, 4, async p => { try { const ls = await src.likes(p.uri); likesMap.set(p.uri, ls.map(a => ({ did: a.did, likedAt: a.likedAt ? new Date(a.likedAt).getTime() : p.t.getTime() }))); } catch (e) { } setS(`Reading likes… ${++ld} of ${extra.length} posts`); });
+    const recv = new Map(), profOf = new Map(AUD.fans.map(f => [f.p.did, f.p]));
+    const touch = (p, kind, when) => { if (!p || !p.did || p.did === me.did) return; let e = recv.get(p.did); if (!e) { e = { p: profOf.get(p.did) || p, likes: 0, reposts: 0, replies: 0, last: 0 }; recv.set(p.did, e); } e[kind]++; if (when > e.last) e.last = when; };
+    posts.forEach(p => (likesMap.get(p.uri) || []).forEach(l => touch({ did: l.did }, "likes", l.likedAt)));
+    let done = 0; const rp = posts.filter(p => p.reposts > 0).slice(0, 60), th = posts.filter(p => p.replies > 0).slice(0, 60);
+    await mapLimit(rp, 4, async p => { try { (await src.reposts(p.uri)).forEach(a => touch(a, "reposts", p.t.getTime())); } catch (e) { } setS(`Reading reposts… ${++done} of ${rp.length}`); });
+    done = 0; await mapLimit(th, 4, async p => { try { (await src.thread(p.uri)).forEach(r => touch(r.p, "replies", r.t)); } catch (e) { } setS(`Reading replies… ${++done} of ${th.length}`); });
+    // what you gave
+    const given = new Map(), give = (d, kind) => { if (!d || d === me.did) return; let g = given.get(d); if (!g) { g = { likes: 0, reposts: 0, replies: 0 }; given.set(d, g); } g[kind]++; };
+    const profFromFeed = new Map();
+    for (const it of M.items) {
+      if (it.reason) { const t = new Date(it.reason.indexedAt || it.post.indexedAt).getTime(); if (t >= t0 && t <= t1) { give(it.post.author.did, "reposts"); profFromFeed.set(it.post.author.did, it.post.author); } }
+      else if (it.post.author.did === me.did && it.reply && it.reply.parent && it.reply.parent.author) { const t = new Date(it.post.record.createdAt || it.post.indexedAt).getTime(); if (t >= t0 && t <= t1) { give(it.reply.parent.author.did, "replies"); profFromFeed.set(it.reply.parent.author.did, it.reply.parent.author); } }
+    }
+    let likesErr = null;
+    try { setS("Reading the posts you liked…"); (await src.myLikes(me.did, t0, n => setS(`Reading the posts you liked… ${fmt(n)}`))).forEach(l => { if (l.t <= t1) give(l.did, "likes"); }); }
+    catch (e) { likesErr = e.message || String(e); }
+    const gt = g => g.likes + g.reposts + g.replies, rt = e => tot3(e);
+    const neglected = [...recv.values()].filter(e => rt(e) >= 2 && (gt(given.get(e.p.did) || { likes: 0, reposts: 0, replies: 0 }) * 3 < rt(e))).sort((a, b) => rt(b) - rt(a) || b.last - a.last).map(e => ({ ...e, g: given.get(e.p.did) || { likes: 0, reposts: 0, replies: 0 } }));
+    let chasedRaw = [...given].filter(([d, g]) => gt(g) >= 3 && ((recv.get(d) ? rt(recv.get(d)) : 0) * 3 < gt(g))).sort((a, b) => gt(b[1]) - gt(a[1])).slice(0, 60);
+    const need = chasedRaw.map(([d]) => d).filter(d => !profOf.has(d) && !profCache.has(d) && !profFromFeed.has(d)); setS("Looking up people…");
+    for (let i = 0; i < need.length; i += 25) { try { (await src.profiles(need.slice(i, i + 25))).forEach(p => profCache.set(p.did, p)); } catch (e) { } }
+    const chased = chasedRaw.map(([d, g]) => ({ p: profOf.get(d) || profCache.get(d) || profFromFeed.get(d) || { did: d, handle: d }, g, r: recv.get(d) || { likes: 0, reposts: 0, replies: 0, last: 0 } }));
+    const both = [...recv.keys()].filter(d => given.has(d)).length;
+    const fset = new Set((AUD.followers || []).map(f => f.did)), gset = new Set((AUD.followsList || []).map(f => f.did));
+    BAL = { neglected, chased, recvN: recv.size, givenN: given.size, both, since: t0, until: t1, label, feedShort, nPosts: posts.length, likesErr, rel: d => ({ follows: AUD.followersComplete ? fset.has(d) : null, followed: gset.has(d) }) };
+  } catch (e) { BAL = { error: e.message || String(e) }; }
+  finally { btn.disabled = false; setS(""); renderBalance(); renderFindings(); }
+}
+
+function renderBalance(state) {
+  const el = $("#balOut"); if (!el) return;
+  if (state === "working") { el.innerHTML = `<div class="empty">Working. This reads a few dozen threads plus your recent likes.</div>`; return; }
+  if (!BAL) { el.innerHTML = `<div class="empty">Press <b>Analyze fan balance</b> to see fans you may be neglecting and people you keep engaging with who never engage back.${DEMO ? "" : " It makes around a hundred requests, so it runs only when you ask. Run the main analysis with the audience scan on first."}</div>`; return; }
+  if (BAL.error) { el.innerHTML = `<div class="empty">${esc(BAL.error)}</div>`; return; }
+  const B = BAL, rel = d => { const r = B.rel(d); return `${r.follows ? "Follows you" : r.follows === false ? "Doesn't follow you" : ""}${r.follows !== null && r.followed ? " · " : ""}${r.followed ? "You follow" : ""}` || "—"; };
+  const person = p => `<div class="person">${avatar(p, "sm")}<div><a href="${profileUrl(p.handle)}" target="_blank" rel="noopener">${esc(p.displayName || p.handle)}<small class="mono">@${esc(p.handle)}</small></a></div></div>`;
+  const ago = t => { if (!t) return ""; const d = Math.round((Date.now() - t) / 864e5); return d <= 0 ? "today" : d + "d ago"; };
+  const nRows = B.neglected.slice(0, balLimit).map(e => `<tr><td>${person(e.p)}</td><td>${acts(e)}${e.last ? `<br><small class="muted mono">last ${ago(e.last)}</small>` : ""}</td><td>${acts(e.g)}</td><td class="muted" style="font-size:12.5px">${rel(e.p.did)}</td></tr>`).join("");
+  const cRows = B.chased.slice(0, balLimit).map(e => `<tr><td>${person(e.p)}</td><td>${acts(e.g)}</td><td>${acts(e.r)}</td><td class="muted" style="font-size:12.5px">${rel(e.p.did)}</td></tr>`).join("");
+  const tbl = (rows, h2, h3) => `<div class="tw"><table><thead><tr><th>Person</th><th>${h2}</th><th>${h3}</th><th>Follow</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const more = (n) => n > balLimit ? `<p><button class="btn small" id="balMore">Show more</button></p>` : "";
+  el.innerHTML = `<div class="chips"><div class="chip"><b>${fmt(B.recvN)}</b><small>people engaged with ${B.label}</small></div><div class="chip"><b>${fmt(B.givenN)}</b><small>people you liked, replied to or reposted ${shortDate(new Date(B.since))} to ${shortDate(new Date(B.until))}</small></div><div class="chip"><b>${fmt(B.both)}</b><small>engage both ways</small></div><div class="chip"><b>${B.givenN ? Math.round(B.both / B.givenN * 100) : 0}%</b><small>of the people you engage with engage back</small></div></div>
+  ${B.feedShort ? `<div class="empty" style="margin-bottom:14px">Your loaded feed doesn't reach back to the start of this time frame, so your replies and reposts early in it are missing. Raise "Posts to read" and analyze again for a fuller picture.</div>` : ""}${B.likesErr ? `<div class="empty" style="margin-bottom:14px">Your likes couldn't be read (${esc(B.likesErr)}), so "you gave" counts only your replies and reposts. Neglected fans may be overstated and fans you chase understated.</div>` : ""}
+  <div class="grid2"><div><h3>Neglected fans</h3><p class="muted" style="font-size:13px;margin:0 0 10px">They engage with you and you give little or nothing back. A like or a reply now and then keeps them around.</p>${nRows ? tbl(nRows, "They gave you", "You gave them") + more(B.neglected.length) : `<div class="empty">No neglected fans found. You're returning the engagement you get.</div>`}</div>
+  <div><h3>Fans you're chasing</h3><p class="muted" style="font-size:13px;margin:0 0 10px">You engage with them often and they rarely or never engage with you. Consider spending that time on people who reciprocate.</p>${cRows ? tbl(cRows, "You gave them", "They gave you") + more(B.chased.length) : `<div class="empty">Nobody stands out. The people you engage with mostly engage back.</div>`}</div></div>
+  <p class="muted" style="font-size:12.5px;margin:14px 0 0">Counts cover ${B.label} (${B.nPosts} ${B.nPosts === 1 ? "post" : "posts"}), up to 100 likes per post, so they show the chosen window, not your whole history. People may also engage by other routes, like quoting you or reading without interacting.</p>`;
+  const mb = $("#balMore"); if (mb) mb.onclick = () => { balLimit += 15; renderBalance(); };
+}
+
+/* ---------- orchestration ---------- */
+function notice(msg, err) { const n = $("#notice"); if (!msg) { n.hidden = true; return; } n.hidden = false; n.className = err ? "err" : ""; n.innerHTML = "<span>" + msg + "</span>"; }
+const status = s => { $("#status").textContent = s || ""; };
+function renderAll() { renderProfile(); renderFindings(); renderGrowth(); renderPosts(); renderKinds(); renderTiming(); renderBlocks(); }
+
+async function scanAudience(src, profile, scan) {
+  const out = { followers: [], fans: null, followersComplete: false, sampled: 0 };
+  const cap = 5000;
+  status("Scanning followers…"); out.followers = await src.followers(profile.did, cap, n => status(`Scanning followers… ${fmt(n)}`));
+  out.followersComplete = out.followers.length >= profile.followersCount - Math.max(5, profile.followersCount * .01) && profile.followersCount <= cap + 50;
+  status("Scanning accounts you follow…"); const follows = await src.follows(profile.did, cap, n => status(`Scanning accounts you follow… ${fmt(n)}`));
+  out.followsList = follows;
+  const fset = new Set(out.followers.map(f => f.did)), gset = new Set(follows.map(f => f.did));
+  const mutualDids = [...fset].filter(d => gset.has(d)); out.mutuals = mutualDids.length; out.mutualPct = out.followers.length ? out.mutuals / out.followers.length * 100 : 0; out.notBack = [...gset].filter(d => !fset.has(d)).length;
+  const sample = M.orig.filter(p => p.likes > 0).slice(0, 40); out.sampled = sample.length; let done = 0;
+  const map = new Map(); out.likesByPost = new Map();
+  await mapLimit(sample, 4, async p => { const ls = await src.likes(p.uri); out.likesByPost.set(p.uri, ls.map(a => ({ did: a.did, likedAt: a.likedAt ? new Date(a.likedAt).getTime() : p.t.getTime() }))); ls.forEach(a => { const e = map.get(a.did) || { p: a, n: 0 }; e.n++; map.set(a.did, e); }); status(`Reading likes… ${++done} of ${sample.length} posts`); });
+  out.fans = [...map.values()].map(e => ({ ...e, follows: fset.has(e.p.did), followed: gset.has(e.p.did) })).filter(e => e.p.did !== profile.did).sort((a, b) => b.n - a.n || a.p.handle.localeCompare(b.p.handle));
+  out.fansNotFollowing = out.fans.filter(f => f.n >= 2 && !f.follows).length;
+  if ($("#ampck").checked && mutualDids.length) {
+    try {
+      const ids = mutualDids.slice(0, 1500); out.ampCapped = mutualDids.length > ids.length;
+      const chunks = []; for (let i = 0; i < ids.length; i += 25) chunks.push(ids.slice(i, i + 25)); const profs = []; let done = 0;
+      await mapLimit(chunks, 4, async c => { profs.push(...await src.profiles(c)); status(`Looking up mutuals… ${fmt(Math.min(ids.length, ++done * 25))} of ${fmt(ids.length)}`); });
+      profs.forEach(p => profCache.set(p.did, p));
+      const rs = M.orig.filter(p => p.reposts > 0).slice(0, 25), by = new Map(); done = 0;
+      await mapLimit(rs, 4, async p => { const L = await src.reposts(p.uri); L.forEach(a => by.set(a.did, (by.get(a.did) || 0) + 1)); status(`Reading reposts… ${++done} of ${rs.length} posts`); });
+      const lk = new Map(out.fans.map(f => [f.p.did, f.n]));
+      out.amp = profs.filter(p => p.followersCount != null).map(p => ({ p, likes: lk.get(p.did) || 0, rep: by.get(p.did) || 0 }));
+    } catch (e) { out.ampError = e.message || String(e); }
+  }
+  return out;
+}
+
+async function run(handleRaw, useDemo) {
+  const src = useDemo ? demoSource : liveSource, scan = $("#scan").checked, limit = +$("#depth").value;
+  $("#go").disabled = true; notice(""); AUD = null; FD = null; BD = null; PEER = null; BAL = null; COM = null; renderPeers(); renderBalance(); renderCommon();
+  try {
+    let h = handleRaw.trim().replace(/^@/, "").replace(/^https?:\/\/bsky\.app\/profile\//, "").split(/[/?#\s]/)[0].toLowerCase();
+    if (!useDemo && !h) throw new Error("Enter a Bluesky handle, like yourname.bsky.social.");
+    if (!useDemo && !h.includes(".") && !h.startsWith("did:")) h += ".bsky.social";
+    status("Loading profile…"); const profile = await src.profile(h);
+    status("Loading posts…"); const items = await src.feed(profile.did, limit, n => status(`Loading posts… ${fmt(n)}`));
+    DEMO = useDemo; M = analyze(profile, items); M.items = items;
+    // history
+    if (useDemo) { const d = demoSource.history(); HIST = { snaps: d.snaps, prev: d.prev }; }
+    else { HIST = loadHist(profile.did); }
+    const prevScan = HIST.prev;
+    if (!useDemo) {
+      const last = HIST.snaps[HIST.snaps.length - 1], snap = { t: Date.now(), followers: profile.followersCount, follows: profile.followsCount, posts: profile.postsCount };
+      if (last && snap.t - last.t < 36e5) HIST.snaps[HIST.snaps.length - 1] = snap; else HIST.snaps.push(snap);
+    }
+    attribute(); renderAll(); renderAudience(scan ? "loading" : "off");
+    if ($("#fdates").checked) {
+      status("Reading follow dates…");
+      try { FD = await src.followDates(profile.did, 20000, n => status(`Reading follow dates… ${fmt(n)}`)); FD.map = new Map(FD.list.map(x => [x.did, x.t])); }
+      catch (e) { FD = { error: e.message || String(e) }; }
+      attribute(); renderAll();
+    }
+    if ($("#blk").checked) {
+      status("Checking blocks…");
+      try { BD = await src.blockDates(profile.did, 20000, n => status(`Checking blocks… ${fmt(n)}`), "app.bsky.graph.block"); } catch (e) { BD = { error: e.message || String(e) }; }
+      attribute(); renderAll();
+    }
+    if (scan) {
+      AUD = await scanAudience(src, profile, scan);
+      if (AUD.followersComplete && prevScan && prevScan.dids) {
+        const prevMap = new Map(prevScan.dids), curMap = new Map(AUD.followers.map(f => [f.did, f.handle]));
+        AUD.diff = { since: prevScan.t, added: [...curMap].filter(([d]) => !prevMap.has(d)).map(([d, hh]) => ({ did: d, handle: hh })), lost: [...prevMap].filter(([d]) => !curMap.has(d)).map(([d, hh]) => ({ did: d, handle: hh })) };
+      }
+      if (!useDemo && AUD.followersComplete) HIST.prev = { t: Date.now(), dids: AUD.followers.slice(0, 8000).map(f => [f.did, f.handle]) };
+      attribute(); renderAll(); renderAudience();
+    }
+    if (!useDemo) { if (!saveHist(profile.did, HIST)) notice("Your browser blocked saving follower history, so growth tracking won't persist from this view.", true); safeSet("skygrowth:last", profile.handle); }
+    else notice(`You're looking at <b>example data</b>. Enter your handle and press Analyze to see your own account.`);
+    status(useDemo ? "" : `Updated ${new Date().toLocaleTimeString()}`);
+    if (useDemo && scan) { await runBalance(); await runPeers(); }
+  } catch (e) {
+    status(""); notice(esc(e.message || String(e)) + (M ? "" : ""), true);
+  } finally { $("#go").disabled = false; }
+}
+
+$("#form").addEventListener("submit", e => { e.preventDefault(); run($("#handle").value, false); });
+$("#demoBtn").addEventListener("click", () => run("", true));
+(function initNav() {
+  const links = [...document.querySelectorAll("#navList a")], ids = links.map(a => a.dataset.s);
+  let ticking = false;
+  const update = () => {
+    ticking = false; let cur = "top";
+    for (const id of ids) { if (id === "top") continue; const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 110) cur = id; }
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) cur = ids[ids.length - 1];
+    links.forEach(a => { const on = a.dataset.s === cur; a.setAttribute("aria-current", on ? "true" : "false"); if (on) { const ul = a.parentElement.parentElement, l = a.offsetLeft - ul.offsetLeft; if (l < ul.scrollLeft || l + a.offsetWidth > ul.scrollLeft + ul.clientWidth) ul.scrollTo({ left: Math.max(0, l - 40), behavior: "auto" }); } });
+  };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener("resize", update);
+  $("#navList").addEventListener("click", e => { const a = e.target.closest("a"); if (a && a.dataset.s === "top") { e.preventDefault(); scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } });
+  update();
+})();
+
+/* ---------- export to PDF via the browser's print dialog ---------- */
+(function initPdf() {
+  let saved = null;
+  const before = () => {
+    const root = document.documentElement; saved = root.getAttribute("data-theme"); root.setAttribute("data-theme", "light");
+    const m = $("#printMeta"); if (m && M) m.textContent = `SkyGrowth report for @${M.profile.handle}${DEMO ? " (example data)" : ""} · generated ${new Date().toLocaleString()}`;
+    if (M) document.title = `SkyGrowth ${M.profile.handle} ${new Date().toISOString().slice(0, 10)}`;
+  };
+  const after = () => { const root = document.documentElement; saved ? root.setAttribute("data-theme", saved) : root.removeAttribute("data-theme"); document.title = origTitle; };
+  const origTitle = document.title;
+  addEventListener("beforeprint", before); addEventListener("afterprint", after);
+  $("#pdfBtn").onclick = () => { if (!M) { notice("Run an analysis first, then export."); return; } window.print(); };
+})();
+(async () => {
+  initPeers(); initBalance(); initCommon();
+  const last = safeGet("skygrowth:last");
+  await run("", true);
+  if (last) { $("#handle").value = last; if (location.protocol !== "file:" || true) { const d = M; await run(last, false); if (!M || M === d) { /* live fetch failed, example data stays */ } } }
+})();
+</script>
+</body>
+</html>
